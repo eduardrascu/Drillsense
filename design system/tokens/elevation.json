@@ -1,0 +1,32 @@
+{
+  "shadow": {
+    "sm": {
+      "value": "0px 2px 2px 0px rgba(0, 0, 0, 0.06), 0px 2px 4px 0px rgba(0, 0, 0, 0.04)",
+      "type": "string"
+    },
+    "md": {
+      "value": "0px 4px 8px 0px rgba(0, 0, 0, 0.12), 0px 2px 4px 0px rgba(0, 0, 0, 0.08)",
+      "type": "string"
+    },
+    "lg": {
+      "value": "0px 8px 12px 0px rgba(0, 0, 0, 0.12), 0px 2px 4px 0px rgba(0, 0, 0, 0.08)",
+      "type": "string"
+    },
+    "xl": {
+      "value": "0px 12px 16px 0px rgba(0, 0, 0, 0.12), 0px 4px 6px 0px rgba(0, 0, 0, 0.08)",
+      "type": "string"
+    },
+    "2xl": {
+      "value": "0px 16px 20px 0px rgba(0, 0, 0, 0.12), 0px 4px 8px 0px rgba(0, 0, 0, 0.08)",
+      "type": "string"
+    },
+    "inner": {
+      "value": "0px 2px 4px 0px rgba(0, 0, 0, 0.06) inset",
+      "type": "string"
+    },
+    "focus": {
+      "value": "0px 0px 0px 2px #005BD3",
+      "type": "string"
+    }
+  }
+}

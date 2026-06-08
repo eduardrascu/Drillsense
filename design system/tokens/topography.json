@@ -1,0 +1,36 @@
+{
+  "heading": {
+    "fontSize": {
+      "4xl": { "value": "48px", "type": "dimension" },
+      "3xl": { "value": "36px", "type": "dimension" },
+      "2xl": { "value": "30px", "type": "dimension" },
+      "xl": { "value": "24px", "type": "dimension" },
+      "lg": { "value": "20px", "type": "dimension" },
+      "md": { "value": "18px", "type": "dimension" },
+      "sm": { "value": "16px", "type": "dimension" }
+    },
+    "lineHeight": {
+      "4xl": { "value": "48px", "type": "dimension" },
+      "3xl": { "value": "40px", "type": "dimension" },
+      "2xl": { "value": "36px", "type": "dimension" },
+      "xl": { "value": "32px", "type": "dimension" },
+      "lg": { "value": "28px", "type": "dimension" },
+      "md": { "value": "28px", "type": "dimension" },
+      "sm": { "value": "24px", "type": "dimension" }
+    }
+  },
+  "body": {
+    "fontSize": {
+      "lg": { "value": "16px", "type": "dimension" },
+      "md": { "value": "14px", "type": "dimension" },
+      "sm": { "value": "12px", "type": "dimension" },
+      "xs": { "value": "10px", "type": "dimension" }
+    },
+    "lineHeight": {
+      "lg": { "value": "24px", "type": "dimension" },
+      "md": { "value": "20px", "type": "dimension" },
+      "sm": { "value": "16px", "type": "dimension" },
+      "xs": { "value": "14px", "type": "dimension" }
+    }
+  }
+}

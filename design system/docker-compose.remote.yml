@@ -1,0 +1,9 @@
+version: '3'
+services:
+  app:
+    stdin_open: true
+    tty: true
+    image: ghcr.io/fuselab-creative/design-system:main
+    restart: always
+    ports:
+      - '6006:6006'

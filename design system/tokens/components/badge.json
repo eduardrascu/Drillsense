@@ -1,0 +1,192 @@
+{
+  "badge-interactive": {
+    "text": {
+      "default": {
+        "value": "{color.ui-gray11.value}",
+        "type": "dimension"
+      },
+      "inverted": {
+        "value": "{color.ui-gray1.value}",
+        "type": "dimension"
+      },
+      "selected": {
+        "value": "{color.blue1.value}",
+        "type": "dimension"
+      }
+    },
+    "padding": {
+      "sm": {
+        "px": {
+          "value": "{custom-size.xxs.value}",
+          "type": "dimension"
+        },
+        "py": {
+          "value": "{custom-size.none.value}",
+          "type": "dimension"
+        }
+      },
+      "md": {
+        "px": {
+          "value": "{custom-size.2xs.value}",
+          "type": "dimension"
+        },
+        "py": {
+          "value": "{custom-size.none.value}",
+          "type": "dimension"
+        }
+      },
+      "lg": {
+        "px": {
+          "value": "{custom-size.2xs.value}",
+          "type": "dimension"
+        },
+        "py": {
+          "value": "{custom-size.xxs.value}",
+          "type": "dimension"
+        }
+      }
+    },
+    "font": {
+      "sm": {
+        "size": {
+          "value": "{body.fontSize.xs.value}",
+          "type": "dimension"
+        },
+        "lineHeight": {
+          "value": "{body.lineHeight.xs.value}",
+          "type": "dimension"
+        }
+      },
+      "md": {
+        "size": {
+          "value": "{body.fontSize.sm.value}",
+          "type": "dimension"
+        },
+        "lineHeight": {
+          "value": "{body.lineHeight.sm.value}",
+          "type": "dimension"
+        }
+      },
+      "lg": {
+        "size": {
+          "value": "{body.fontSize.sm.value}",
+          "type": "dimension"
+        },
+        "lineHeight": {
+          "value": "{body.lineHeight.sm.value}",
+          "type": "dimension"
+        }
+      }
+    },
+    "backgroundColor": {
+      "dafault": {
+        "value": "{color.ui-gray1.value}",
+        "type": "color"
+      },
+      "hover": {
+        "value": "{color.ui-gray2.value}",
+        "type": "color"
+      },
+      "pressed": {
+        "value": "{color.ui-gray3.value}",
+        "type": "color"
+      },
+      "selected": {
+        "value": "{color.blue11.value}",
+        "type": "color"
+      },
+      "disabled": {
+        "value": "{color.ui-gray2.value}",
+        "type": "color"
+      },
+      "empty": {
+        "value": "{color.ui-gray1.value}",
+        "type": "color"
+      },
+      "focus": {
+        "value": "{color.ui-gray1.value}",
+        "type": "color"
+      }
+    }
+  },
+  "badge-status": {
+    "text": {
+      "default": {
+        "value": "{color.ui-gray13.value}",
+        "type": "color"
+      },
+      "inverted": {
+        "value": "{color.red1.value}",
+        "type": "color"
+      },
+      "error": {
+        "value": "{color.red13.value}",
+        "type": "color"
+      },
+      "success": {
+        "value": "{color.green13.value}",
+        "type": "color"
+      },
+      "warning": {
+        "value": "{color.yellow13.value}",
+        "type": "color"
+      },
+      "info": {
+        "value": "{color.light-blue13.value}",
+        "type": "color"
+      }
+    },
+    "backgroundColor": {
+      "dafault": {
+        "saturated": {
+          "value": "{color.ui-gray13.value}",
+          "type": "color"
+        },
+        "muted": {
+          "value": "#56596B1F",
+          "type": "color"
+        }
+      },
+      "error": {
+        "saturated": {
+          "value": "{color.red11.value}",
+          "type": "color"
+        },
+        "muted": {
+          "value": "#F445451F",
+          "type": "color"
+        }
+      },
+      "success": {
+        "saturated": {
+          "value": "{color.green10.value}",
+          "type": "color"
+        },
+        "muted": {
+          "value": "#45F4851F",
+          "type": "color"
+        }
+      },
+      "warning": {
+        "saturated": {
+          "value": "{color.yellow9.value}",
+          "type": "color"
+        },
+        "muted": {
+          "value": "#F4D14533",
+          "type": "color"
+        }
+      },
+      "info": {
+        "saturated": {
+          "value": "{color.light-blue8.value}",
+          "type": "color"
+        },
+        "muted": {
+          "value": "#07A2E41F",
+          "type": "color"
+        }
+      }
+    }
+  }
+}

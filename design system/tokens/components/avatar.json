@@ -1,0 +1,22 @@
+{
+  "avatar": {
+    "size": {
+      "xs": {
+        "value": "{custom-size.lg.value}",
+        "type": "dimension"
+      },
+      "sm": {
+        "value": "{custom-size.2lg.value}",
+        "type": "dimension"
+      },
+      "md": {
+        "value": "{custom-size.xl.value}",
+        "type": "dimension"
+      },
+      "lg": {
+        "value": "{custom-size.2xl.value}",
+        "type": "dimension"
+      }
+    }
+  }
+}

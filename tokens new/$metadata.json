@@ -1,0 +1,19 @@
+{
+  "tokenSetOrder": [
+    "global",
+    "Core colors palette/Style 1",
+    "Color tokens/Light",
+    "Color tokens/Dark (classic swap)",
+    "Color tokens/Wireframe",
+    "Color tokens/Dark Wireframe",
+    "Core numbers/Default",
+    "Core numbers/Wide",
+    "Core numbers/Condenced",
+    "Typography/Desktop",
+    "Screen/Desktop",
+    "Screen/Laptop",
+    "Screen/Tablet",
+    "Screen/Mobile",
+    "Effects/Mode 1"
+  ]
+}

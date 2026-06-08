@@ -1,0 +1,48 @@
+{
+  "custom-size": {
+    "none": {
+      "value": "0px",
+      "type": "dimension"
+    },
+    "xxs": {
+      "value": "2px",
+      "type": "dimension"
+    },
+    "2xs": {
+      "value": "4px",
+      "type": "dimension"
+    },
+    "xs": {
+      "value": "8px",
+      "type": "dimension"
+    },
+    "sm": {
+      "value": "12px",
+      "type": "dimension"
+    },
+    "2md": {
+      "value": "14px",
+      "type": "dimension"
+    },
+    "md": {
+      "value": "16px",
+      "type": "dimension"
+    },
+    "lg": {
+      "value": "20px",
+      "type": "dimension"
+    },
+    "2lg": {
+      "value": "24px",
+      "type": "dimension"
+    },
+    "xl": {
+      "value": "32px",
+      "type": "dimension"
+    },
+    "2xl": {
+      "value": "40px",
+      "type": "dimension"
+    }
+  }
+}

@@ -1,0 +1,29 @@
+import { FC, SVGProps } from 'react';
+
+const Code: FC<SVGProps<SVGSVGElement>> = props => {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 16 16"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <path
+        d="M15.5 7.99953L12 11.4995L11.295 10.7945L14.085 7.99953L11.295 5.20453L12 4.49953L15.5 7.99953Z"
+        fill="currentColor"
+      />
+      <path
+        d="M0.5 7.99953L4 4.49953L4.705 5.20453L1.915 7.99953L4.705 10.7945L4 11.4995L0.5 7.99953Z"
+        fill="currentColor"
+      />
+      <path
+        d="M8.81944 3L6.20925 12.7414L7.17518 13.0002L9.78537 3.25882L8.81944 3Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+};
+
+export default Code;
