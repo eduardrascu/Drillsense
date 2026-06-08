@@ -21,18 +21,19 @@ export const SortWrapper = styled.div<{
     `}
 `;
 
-export const StyledSpan = styled.span`
-  color: ${({ theme }) => theme['neutralTextWeak']};
-`;
-export const Label = styled.span`
-  font-weight: 400;
-  font-size: 14px;
+export const LabelWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: 0.3s all;
 `;
 
 export const FilterWindow = styled.div<{ $reversed: boolean }>`
   position: absolute;
   left: 0;
-  margin-top: 20px;
+  z-index: 100;
+  min-width: 160px;
+  margin-top: ${({ theme }) => theme.radii['sm']};
   ${({ $reversed }) =>
     $reversed
       ? css`
@@ -41,28 +42,26 @@ export const FilterWindow = styled.div<{ $reversed: boolean }>`
       : css`
           top: 20px;
         `}
-  background: ${({ theme }) => theme['neutralBackgroundBase']};
-  border-radius: 8px;
-  box-shadow: 0px 2px 4px 0px rgba(20, 28, 44, 0.06),
-    0px 4px 8px 2px rgba(20, 28, 44, 0.06);
-`;
-
-export const LabelWrapper = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: .3s all;
+  background: ${({ theme }) => theme.colors.neutral.background.base};
+  border-radius: ${({ theme }) => theme.radii['lg']};
+  border: 1px solid ${({ theme }) => theme.colors.neutral.border.weakest};
+  box-shadow: ${({ theme }) => theme.shadows['md']};
+  overflow: hidden;
 `;
 
 export const Option = styled.div<{ $selected: boolean }>`
-  padding: 7px;
-  ${({ $selected }) =>
+  padding: ${({ theme }) => `${theme.radii['sm']} ${theme.radii['xl']}`};
+  color: ${({ theme }) => theme.colors.neutral.text.default};
+  background-color: ${({ theme }) => theme.colors.neutral.background.base};
+  cursor: pointer;
+
+  ${({ $selected, theme }) =>
     $selected &&
     css`
-      background: ${({ theme }) => theme['weakBorder']};
+      background-color: ${theme.colors.neutral.background.transparent.default};
     `}
 
   &:hover {
-    background: ${({ theme }) => theme['weakBorder']};
+    background-color: ${({ theme }) => theme.colors.neutral.background.transparent.default};
   }
 `;

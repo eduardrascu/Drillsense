@@ -37,22 +37,19 @@ import sampleImg8 from '@src/assets/sample images/Rectangle 1-8.jpg';
 import sampleImg9 from '@src/assets/sample images/Rectangle 1-9.jpg';
 import sampleImg10 from '@src/assets/sample images/Rectangle 1-10.jpg';
 import sampleImg11 from '@src/assets/sample images/Rectangle 1-11.jpg';
-import gridBg from '@src/assets/Grid.svg';
 const SAMPLE_IMAGES = [sampleImg0, sampleImg1, sampleImg2, sampleImg3, sampleImg4, sampleImg5, sampleImg6, sampleImg7, sampleImg8, sampleImg9, sampleImg10, sampleImg11];
 import type { BagdeTypes } from '@src/components/Badge/types';
 import { PieChart } from '@src/components/PieChart';
 import { LineChartDS } from '@src/components/LineChart';
 import { HBarChartDS } from '@src/components/HorizontalBarChart';
-import { Legend } from '@src/components/Legend';
 import { LegendContainer, LegendItem } from '@src/components/Legend/styles';
 import SortDropdown from '@src/components/Sort';
 
 /* ------------------------------------------------------------------ *
- * Comparison / Well vs Well
- * A faithful rebuild of the DrillSense comparison screen, composed from
- * FuseDash DS primitives (Typography, Button, Badge, ProgressBar, Tabs,
- * Avatar, Icon) on token-driven layout containers. Every color, padding,
- * gap and radius traces to src/themes/tokens.ts — no hardcoded values.
+ * Well Detail
+ * Single-well detail page — breadcrumb predecessor to WellComparison.
+ * All sections from WellComparison adapted for a single well: no Pair
+ * wrappers, single-series charts, single KPI grid, single-well AI summary.
  * ------------------------------------------------------------------ */
 
 const d = darkTheme.colors;
@@ -81,9 +78,6 @@ const t = {
   borderWeak: d.neutral.border.weak,
   borderDefault: d.neutral.border.default,
   borderStrongest: d.neutral.border.strong,
-  // data viz — two-well comparison uses qualitative_2_1 per color-rules
-  seriesA: d.dataViz.qualitative_2_1[0],
-  seriesB: d.dataViz.qualitative_2_1[1],
   // operational state semantics — system colors only
   stateTrip: d.system.warning.background.default,
   stateStable: d.system.success.background.default,
@@ -288,95 +282,6 @@ const SectionMenuDangerItem = styled(DropdownMenuItem)`
   }
 `;
 
-/* ---------------------------- header ------------------------------ */
-const SelectorRow = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: ${spacing.md};
-  padding: ${spacing.xl} ${spacing.xl};
-`;
-
-const Selector = styled.button`
-  flex: 1 0 0;
-  width: 100%;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: ${spacing.xs};
-  padding: ${space['10px']} ${spacing.md};
-  background: ${t.surface};
-  border: 1px solid ${t.borderStrong};
-  border-radius: ${radii.md};
-  cursor: pointer;
-  text-align: left;
-  &:hover {
-    border-color: ${t.teal};
-  }
-  &:disabled {
-    cursor: default;
-    opacity: 0.45;
-    border-color: ${t.border};
-    &:hover { border-color: ${t.border}; }
-  }
-  .label {
-    flex: 1 0 0;
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: ${fontSizes.m};
-    font-weight: ${fontWeights.semibold};
-    color: ${t.ink};
-  }
-  .divider {
-    width: 1px;
-    align-self: stretch;
-    background: ${t.border};
-  }
-`;
-
-const SelectorWrap = styled.div`
-  flex: 1 0 0;
-  min-width: 0;
-  position: relative;
-`;
-
-const WellDropdown = styled.div`
-  position: absolute;
-  top: calc(100% + ${spacing.xs});
-  left: 0;
-  right: 0;
-  background: ${t.surface};
-  border: 1px solid ${t.borderWeakest};
-  border-radius: ${radii.md};
-  box-shadow: ${shadows.lg};
-  z-index: 100;
-  overflow: hidden;
-  padding: ${space['4px']} 0;
-`;
-
-const WellOption = styled.button<{ $selected?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: ${spacing.sm};
-  width: 100%;
-  height: ${sizes.md};
-  padding: 0 ${spacing.md};
-  background: ${(p) => (p.$selected ? t.tealSoft : 'transparent')};
-  border: none;
-  font-family: ${fontFamilies.body};
-  font-size: ${fontSizes.s};
-  font-weight: ${(p) => (p.$selected ? fontWeights.semibold : fontWeights.regular)};
-  color: ${(p) => (p.$selected ? t.ink : t.ink2)};
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.15s ease-in-out, color 0.15s ease-in-out;
-  &:hover {
-    background: ${t.panelTint};
-    color: ${t.ink};
-  }
-`;
-
 /* ---------------------------- content ----------------------------- */
 
 const Main = styled.main`
@@ -409,8 +314,7 @@ const SectionHead = styled.div`
   }
 `;
 
-/* ----------------------- comparison summary ----------------------- */
-
+/* ----------------------- summary ----------------------- */
 
 const CardBodyWrap = styled.div`
   b {
@@ -477,11 +381,6 @@ const AICardTitle = styled.span`
 
 /* ------------------------ general details ------------------------- */
 
-const Pair = styled.div`
-  display: flex;
-  gap: ${spacing.md};
-  align-items: stretch;
-`;
 const InfoCard = styled.div`
   flex: 1 0 0;
   min-width: 0;
@@ -614,9 +513,6 @@ const OffsetWellPct = styled.span`
   text-align: right;
 `;
 
-/* ----------------------------- trends ----------------------------- */
-
-
 /* --------------------------- correlation -------------------------- */
 
 const ChartWrap = styled.div`
@@ -669,7 +565,6 @@ const HccChartCell = styled.div`
   position: relative;
 `;
 
-
 const HccDescCell = styled.div`
   flex: 1 1 0;
   min-width: 0;
@@ -699,6 +594,7 @@ const KpiSummaryGrid = styled.div`
     grid-template-columns: repeat(3, 1fr);
   }
 `;
+
 const KpiInfoCard = styled(InfoCard)`
   padding: 0;
   overflow: hidden;
@@ -962,15 +858,6 @@ const AiFabMiddle = styled.span<{ $open?: boolean }>`
 /* ============================== data ============================== */
 
 const WELL_A = 'Beartooth 54-1-34 unit 23H';
-const WELL_B = 'Silver Peak 58-1-22 unit 18H';
-const WELLS = [
-  'Silver Peak 58-1-22 unit 18H',
-  'Coyote Ridge 42-3-11 unit 7H',
-  'Mesa Verde 61-2-08 unit 5H',
-  'Ironhorse 33-4-19 unit 12H',
-  'Thunderbird 77-5-03 unit 9H',
-];
-const SERIES_CODE = '2-B-RO-S-X-1-CT-PR  1-5-RO-S-X-1-WT-PR 13  3-1-WT-S-X-O-BT-TD';
 
 type AICardData = { icon: IconNameType; title: string; body: JSX.Element; active?: boolean };
 type IconNameType = `${IconName}`;
@@ -982,7 +869,7 @@ const SUMMARY: AICardData[] = [
     active: true,
     body: (
       <>
-        <b>Beartooth 54-1-34</b> maintains consistently higher ROP vs. <b>Silver Peak 58-1-22</b> across 2,000–8,000 ft.
+        <b>Beartooth 54-1-34</b> maintains consistently strong ROP across 2,000–8,000 ft, peaking in the Redfork formation interval.
       </>
     ),
   },
@@ -991,8 +878,7 @@ const SUMMARY: AICardData[] = [
     title: 'XRF ratios',
     body: (
       <>
-        Zn/Mn is significantly higher, while K/Ti and Ca/Nd are moderately lower
-        in <b>BEARTOOTH 54-1-34 UNIT 23H</b>.
+        Elevated Zn/Mn and reduced K/Ti ratios are consistent with the target lithology in <b>BEARTOOTH 54-1-34 UNIT 23H</b>.
       </>
     ),
   },
@@ -1001,8 +887,7 @@ const SUMMARY: AICardData[] = [
     title: 'Bit wear indices',
     body: (
       <>
-        <b>SILVER PEAK 58-1-22 UNIT 18H</b> exhibits 25% higher average bit wear
-        across all depths analyzed.
+        Bit wear is within expected range for the Redfork; no abnormal wear detected below 7,000 ft.
       </>
     ),
   },
@@ -1011,8 +896,7 @@ const SUMMARY: AICardData[] = [
     title: 'RPM vs VS correlation',
     body: (
       <>
-        <b>BEARTOOTH 54-1-34 UNIT 23H</b> shows a stronger positive correlation
-        between RPM and VS.
+        <b>BEARTOOTH 54-1-34 UNIT 23H</b> shows a strong positive RPM-to-vertical-section correlation across all analyzed depths.
       </>
     ),
   },
@@ -1021,8 +905,7 @@ const SUMMARY: AICardData[] = [
     title: 'String weight variability',
     body: (
       <>
-        <b>SILVER PEAK 58-1-22 UNIT 18H</b> sees higher fluctuations in string
-        weight, primarily beyond 7,000 ft.
+        Moderate string weight fluctuations beyond 7,000 ft align with the expected lateral transition zone behavior.
       </>
     ),
   },
@@ -1035,14 +918,6 @@ const GENERAL_A: InfoRow[] = [
   { k: 'API number', v: '35-039-00004' },
   { k: 'Target formation', v: 'Redfork' },
   { k: 'Location', v: '35.5799400, -98.8795200' },
-  { k: 'County/state', v: 'Custer, OK' },
-];
-const GENERAL_B: InfoRow[] = [
-  { k: 'Benchmark ID', v: '317' },
-  { k: 'Operator', v: 'Silver Peak Energy' },
-  { k: 'API number', v: '35-039-00118' },
-  { k: 'Target formation', v: 'Redfork' },
-  { k: 'Location', v: '35.6021500, -98.9114700' },
   { k: 'County/state', v: 'Custer, OK' },
 ];
 
@@ -1067,18 +942,6 @@ const KPI_SUMMARY: KpiSummary[] = [
   { label: 'Flow Rate', unit: 'gpm', value: 24.23, delta: 5.4, icon: IconName.DROPLET },
   { label: 'MSE', unit: 'ksi', value: 312.56, delta: 5.4, icon: IconName.LIGHTNING },
 ];
-const KPI_SUMMARY_B: KpiSummary[] = [
-  { label: 'ROP', unit: 'ft/hr', value: 34.21, delta: 2.1, icon: IconName.SPEEDOMETER_2 },
-  { label: 'WOB', unit: 'klbs', value: 26.87, delta: 8.3, icon: IconName.ARROW_DOWN_CIRCLE },
-  { label: 'RPM', unit: 'rpm', value: 298.14, delta: 1.7, icon: IconName.ARROW_CLOCKWISE },
-  { label: 'String Wt', unit: 'klbs', value: 361.42, delta: 7.2, icon: IconName.DIAGRAM_3 },
-  { label: 'SPP', unit: 'psi', value: 5742.33, delta: 3.8, icon: IconName.SPEEDOMETER },
-  { label: 'Diff Press', unit: 'psi', value: 104.35, delta: 12.6, icon: IconName.BAR_CHART_LINE },
-  { label: 'Torque', unit: 'kft-lb', value: 41.22, delta: 6.4, icon: IconName.WRENCH_ADJUSTABLE },
-  { label: 'Flow Rate', unit: 'gpm', value: 22.81, delta: 4.9, icon: IconName.DROPLET },
-  { label: 'MSE', unit: 'ksi', value: 334.78, delta: 9.2, icon: IconName.LIGHTNING },
-];
-
 
 // ---- correlation chart data (deterministic, generated once) ----
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
@@ -1086,29 +949,18 @@ const N = 500;
 const DEPTHS = Array.from({ length: N }, (_, i) => (i * 10000) / (N - 1));
 
 // Well A: starts high, drops through a hard formation mid-section, recovers late
-const SERIES_A = DEPTHS.map((d, i) => {
-  const t = d / 10000;
-  const trend = 3.4 - t * 1.2 + Math.pow(t - 0.55, 2) * 2.8 - Math.pow(t - 0.8, 2) * 1.4;
+const SERIES_A = DEPTHS.map((_, i) => {
+  const tn = i / (N - 1) * 10000 / 10000;
+  const trend = 3.4 - tn * 1.2 + Math.pow(tn - 0.55, 2) * 2.8 - Math.pow(tn - 0.8, 2) * 1.4;
   const slow = Math.sin(i / 18) * 0.22 + Math.sin(i / 11 + 0.7) * 0.14;
   const mid = Math.sin(i / 4.2 + 1.1) * 0.09 + Math.sin(i / 2.3) * 0.06;
   const noise = Math.sin(i / 0.9 + 0.3) * 0.05 + Math.sin(i / 0.45) * 0.03;
   return clamp(trend + slow + mid + noise, 0.4, 4.6);
 });
 
-// Well B: lower baseline, rises through mid, plateaus, drops sharply at end
-const SERIES_B = DEPTHS.map((d, i) => {
-  const t = d / 10000;
-  const trend = 1.6 + t * 0.9 - Math.pow(t - 0.65, 2) * 3.1 + Math.pow(t - 0.4, 2) * 1.2;
-  const slow = Math.sin(i / 22 + 2.1) * 0.18 + Math.sin(i / 13 + 1.4) * 0.11;
-  const mid = Math.sin(i / 5.1 + 2.9) * 0.08 + Math.sin(i / 2.7 + 1.8) * 0.05;
-  const noise = Math.sin(i / 1.1 + 1.5) * 0.045 + Math.sin(i / 0.5 + 0.9) * 0.025;
-  return clamp(trend + slow + mid + noise, 0.12, 3.8);
-});
-
 const CHART_DATA = DEPTHS.map((depth, i) => ({
   depth: Math.round(depth),
-  wellA: parseFloat(SERIES_A[i].toFixed(2)),
-  wellB: parseFloat(SERIES_B[i].toFixed(2)),
+  well: parseFloat(SERIES_A[i].toFixed(2)),
 }));
 
 const N_AR = 400;
@@ -1120,17 +972,9 @@ const AR_SERIES_A = AR_DEPTHS_RAW.map((_, i) => {
   const mid  = Math.sin(i / 6 + 0.9) * 1.5;
   return clamp(trend + slow + mid, 5, 95);
 });
-const AR_SERIES_B = AR_DEPTHS_RAW.map((_, i) => {
-  const tn = i / (N_AR - 1);
-  const trend = 8 + tn * 58;
-  const slow = Math.sin(i / 28 + 2.3) * 4.5 + Math.sin(i / 16 + 0.8) * 3;
-  const mid  = Math.sin(i / 7 + 2.1) * 1.8;
-  return clamp(trend + slow + mid, 5, 95);
-});
 const AR_CHART_DATA = AR_DEPTHS_RAW.map((depth, i) => ({
   depth: Math.round(depth),
-  wellA: parseFloat(AR_SERIES_A[i].toFixed(2)),
-  wellB: parseFloat(AR_SERIES_B[i].toFixed(2)),
+  well: parseFloat(AR_SERIES_A[i].toFixed(2)),
 }));
 
 const CORR_TABS = [
@@ -1139,7 +983,6 @@ const CORR_TABS = [
   { id: 'bitrpm', label: 'BitRPM vs. VS' },
   { id: 'stringwt', label: 'StringWT vs. VS' },
 ];
-
 
 type HccCorr = {
   kpi: string;
@@ -1195,10 +1038,6 @@ const BAND_A: [StateKey, number][] = [
   ['trip', 4], ['event', 5], ['stable', 8], ['trip', 3], ['adjust', 7], ['stable', 13],
   ['event', 4], ['stable', 10],
 ];
-const BAND_B: [StateKey, number][] = [
-  ['stable', 11], ['trip', 7], ['stable', 16], ['event', 5], ['adjust', 9],
-  ['stable', 12], ['trip', 6], ['stable', 14], ['event', 6], ['adjust', 8], ['stable', 6],
-];
 const toDepthBands = (bands: [StateKey, number][]) => {
   let cursor = 0;
   return bands.map(([state, pct]) => {
@@ -1220,24 +1059,22 @@ const STATE_COLORS: Record<string, string> = {
   event:  d.dataViz.qualitative_2_1[1],
 };
 const VERTICAL_SECTION_ROWS = [
-  { label: 'Well 1', bands: toDepthBands(BAND_A) },
-  { label: 'Well 2', bands: toDepthBands(BAND_B) },
+  { label: WELL_A, bands: toDepthBands(BAND_A) },
 ];
 
 const SECTION_IDS = ['summary', 'general', 'offset', 'trends', 'kpi', 'correlation', 'samples', 'ar'] as const;
 type SectionId = typeof SECTION_IDS[number];
 
 const SECTION_META: Record<SectionId, { title: string; desc: string }> = {
-  summary:     { title: 'Comparison summary',   desc: 'AI-generated comparison highlights' },
-  general:     { title: 'General details',       desc: 'Well metadata and operator info' },
-  offset:      { title: 'Offset well',           desc: 'Pad order and well stages' },
-  trends:      { title: 'Trends',                desc: 'High confidence correlations' },
-  kpi:         { title: 'KPI summary',           desc: 'Rate of penetration, WOB, RPM and more' },
-  correlation: { title: 'Drilling performance',  desc: 'Correlation view charts' },
-  samples:     { title: 'Samples by depth',      desc: 'Core sample gallery by depth' },
+  summary:     { title: 'Well summary',          desc: 'AI-generated well highlights' },
+  general:     { title: 'General details',        desc: 'Well metadata and operator info' },
+  offset:      { title: 'Offset well',            desc: 'Pad order and well stages' },
+  trends:      { title: 'Trends',                 desc: 'High confidence correlations' },
+  kpi:         { title: 'KPI summary',            desc: 'Rate of penetration, WOB, RPM and more' },
+  correlation: { title: 'Drilling performance',   desc: 'Correlation view charts' },
+  samples:     { title: 'Samples by depth',       desc: 'Core sample gallery by depth' },
   ar:          { title: 'Particle shape analyses', desc: 'Amplitude-to-reflectance ratio by depth' },
 };
-
 
 const SAMPLE_SORT_OPTIONS = [
   { label: 'Depth', value: 'depth' },
@@ -1260,7 +1097,6 @@ const TIME_WINDOW_OPTIONS = [
 ];
 
 /* ============================ sub-views =========================== */
-
 
 function HccPanelRows({ rows }: { rows: HccCorr[] }) {
   return (
@@ -1482,7 +1318,6 @@ function InfoColumn({ rows }: { rows: InfoRow[] }) {
   );
 }
 
-
 function OffsetConnectorSVG({ totalH, ys, W, padY }: { totalH: number; ys: number[]; W: number; padY: number }) {
   return (
     <svg width={W} height={totalH} style={{ display: 'block', width: '100%', height: totalH }}>
@@ -1496,10 +1331,10 @@ function OffsetConnectorSVG({ totalH, ys, W, padY }: { totalH: number; ys: numbe
         ))}
       </defs>
       {ys.map((y, i) => {
-        const d = `M 0 ${padY} C ${W * 0.5} ${padY}, ${W * 0.5} ${y}, ${W} ${y}`;
+        const pd = `M 0 ${padY} C ${W * 0.5} ${padY}, ${W * 0.5} ${y}, ${W} ${y}`;
         return (
           <g key={i}>
-            <path d={d} fill="none" stroke={`url(#cg-${i})`} strokeWidth={1} />
+            <path d={pd} fill="none" stroke={`url(#cg-${i})`} strokeWidth={1} />
             <circle cx={W} cy={y} r={4} fill={t.canvas} stroke={t.borderWeak} strokeWidth={1} />
           </g>
         );
@@ -1599,40 +1434,17 @@ function OffsetColumn() {
           ))}
         </OffsetWellsCol>
       </OffsetTreeWrap>
-
     </InfoCard>
   );
 }
 
-// fill1 = row 1 (this well), fill2 = row 2 (comparison well)
-function MiniDotGrid({ fill1, fill2, well }: { fill1: number; fill2: number; well: 'a' | 'b' }) {
-  const DOTS = 10, R = 2.5, GAP = 6, ROW_GAP = 5;
-  const W = (DOTS - 1) * GAP + R * 2;
-  const H = R * 2 + ROW_GAP + R * 2;
-  const color1 = well === 'a' ? t.seriesA : t.ink3;
-  const color2 = well === 'a' ? t.ink3 : t.seriesB;
-  const empty = d.neutral.border.weaker;
-  const row = (fill: number, color: string, y: number) =>
-    Array.from({ length: DOTS }, (_, i) => (
-      <circle key={i} cx={i * GAP + R} cy={y} r={R} fill={i < fill ? color : empty} />
-    ));
-  return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ flexShrink: 0 }}>
-      {row(fill1, color1, R)}
-      {row(fill2, color2, R + ROW_GAP + R * 2)}
-    </svg>
-  );
-}
-
-function KpiCard({ kpi, well, fill1, fill2 }: { kpi: KpiSummary; well: 'a' | 'b'; fill1: number; fill2: number }) {
+function SingleKpiCard({ kpi }: { kpi: KpiSummary }) {
   return (
     <KpiSummaryCard>
       <KpiSummaryTop>
         <KpiSummaryLabelRow>
-          <Icon iconName={kpi.icon} width={14} height={14} />
-          <Typography type="body" size="md" color="weaker">
-            {kpi.label}
-          </Typography>
+          <Icon iconName={kpi.icon as IconName} width={14} height={14} />
+          <Typography type="body" size="md" color="weaker">{kpi.label}</Typography>
         </KpiSummaryLabelRow>
       </KpiSummaryTop>
       <KpiCardBottom>
@@ -1651,42 +1463,22 @@ function KpiCard({ kpi, well, fill1, fill2 }: { kpi: KpiSummary; well: 'a' | 'b'
             <KpiDeltaLabel>vs prev mo</KpiDeltaLabel>
           </KpiDelta>
         </KpiValueBlock>
-        <MiniDotGrid fill1={fill1} fill2={fill2} well={well} />
       </KpiCardBottom>
     </KpiSummaryCard>
   );
 }
 
-// winner gets 10 dots; loser loses 1 dot per 5% gap (amplified so small diffs still read)
-const KPI_FILLS: [number, number][] = KPI_SUMMARY.map((kpiA, i) => {
-  const a = kpiA.value;
-  const b = KPI_SUMMARY_B[i].value;
-  const pctDiff = (Math.abs(a - b) / Math.max(a, b)) * 100;
-  const lower = Math.max(1, 10 - Math.ceil(pctDiff / 5));
-  return a >= b ? [10, lower] : [lower, 10];
-});
-
 function KpiSummarySection() {
   return (
-    <Pair>
-      <KpiInfoCard>
-        <KpiSummaryGrid>
-          {KPI_SUMMARY.map((kpi, i) => (
-            <KpiCard key={kpi.label} kpi={kpi} well="a" fill1={KPI_FILLS[i][0]} fill2={KPI_FILLS[i][1]} />
-          ))}
-        </KpiSummaryGrid>
-      </KpiInfoCard>
-      <KpiInfoCard>
-        <KpiSummaryGrid>
-          {KPI_SUMMARY_B.map((kpi, i) => (
-            <KpiCard key={`b-${kpi.label}`} kpi={kpi} well="b" fill1={KPI_FILLS[i][0]} fill2={KPI_FILLS[i][1]} />
-          ))}
-        </KpiSummaryGrid>
-      </KpiInfoCard>
-    </Pair>
+    <KpiInfoCard>
+      <KpiSummaryGrid>
+        {KPI_SUMMARY.map((kpi) => (
+          <SingleKpiCard key={kpi.label} kpi={kpi} />
+        ))}
+      </KpiSummaryGrid>
+    </KpiInfoCard>
   );
 }
-
 
 function CorrelationChart({ flowAction, dimContent, onRemove }: { flowAction?: React.ReactNode; dimContent?: boolean; onRemove?: () => void }) {
   const [tab, setTab] = useState('rop');
@@ -1711,45 +1503,44 @@ function CorrelationChart({ flowAction, dimContent, onRemove }: { flowAction?: R
         </div>
       </SectionHead>
       <SectionContentWrap $dim={dimContent}>
-      <Panel>
-        <ChartWrap>
-          <ChartTitleRow>
-            <ChartTitle>Rate of penetration</ChartTitle>
-            <Legend labels={[WELL_A, WELL_B]} width="auto" />
-          </ChartTitleRow>
-
-          <LineChartDS
-            data={CHART_DATA}
-            xKey="depth"
-            yKeys={['wellA', 'wellB']}
-            colors={[t.seriesA, t.seriesB]}
-            height={300}
-            yLabel="ROP (ft/h)"
-            xLabel="Depth (ft)"
-            xTickFormatter={(v) => v === 0 ? '0' : `${v / 1000}K`}
-          />
-
+        <Panel>
           <ChartWrap>
             <ChartTitleRow>
-              <ChartTitle>Vertical section</ChartTitle>
-              <LegendContainer $direction="horizontal" $height="auto" $width="auto">
-                {(Object.keys(STATE_META) as StateKey[]).map((k) => (
-                  <LegendItem key={k} $color={STATE_META[k].c}>
-                    {STATE_META[k].label}
-                  </LegendItem>
-                ))}
-              </LegendContainer>
+              <ChartTitle>Rate of penetration</ChartTitle>
             </ChartTitleRow>
-            <HBarChartDS
-              rows={VERTICAL_SECTION_ROWS}
-              domain={[0, 10000]}
-              colors={STATE_COLORS}
-              height={96}
+
+            <LineChartDS
+              data={CHART_DATA}
+              xKey="depth"
+              yKeys={['well']}
+              colors={[t.teal]}
+              height={300}
+              yLabel="ROP (ft/h)"
+              xLabel="Depth (ft)"
               xTickFormatter={(v) => v === 0 ? '0' : `${v / 1000}K`}
             />
+
+            <ChartWrap>
+              <ChartTitleRow>
+                <ChartTitle>Vertical section</ChartTitle>
+                <LegendContainer $direction="horizontal" $height="auto" $width="auto">
+                  {(Object.keys(STATE_META) as StateKey[]).map((k) => (
+                    <LegendItem key={k} $color={STATE_META[k].c}>
+                      {STATE_META[k].label}
+                    </LegendItem>
+                  ))}
+                </LegendContainer>
+              </ChartTitleRow>
+              <HBarChartDS
+                rows={VERTICAL_SECTION_ROWS}
+                domain={[0, 10000]}
+                colors={STATE_COLORS}
+                height={96}
+                xTickFormatter={(v) => v === 0 ? '0' : `${v / 1000}K`}
+              />
+            </ChartWrap>
           </ChartWrap>
-        </ChartWrap>
-      </Panel>
+        </Panel>
       </SectionContentWrap>
     </section>
   );
@@ -1801,17 +1592,17 @@ function SampleColumn({ seedOffset, count = 10 }: { seedOffset: number; count?: 
     <SampleWrap $fade={fade} $fadeTop={fadeTop}>
       <SampleScrollWrap ref={scrollRef} onScroll={checkScroll}>
         <TileGrid>
-          {depths.map((d, i) => {
+          {depths.map((dp, i) => {
             const meta = SAMPLE_META[i % SAMPLE_META.length];
             return (
-              <Tile key={d}>
+              <Tile key={dp}>
                 <TileImgWrap>
                   <TileImg src={SAMPLE_IMAGES[(seedOffset + i) % 12] as unknown as string} alt="" />
                 </TileImgWrap>
                 <TileBody>
                   <TileTitleGroup>
                     <TileDepthRow>
-                      <TileDepthValue>{fmt(d)} ft</TileDepthValue>
+                      <TileDepthValue>{fmt(dp)} ft</TileDepthValue>
                     </TileDepthRow>
                     <TileIdRow>
                       <Icon iconName={IconName.UPC} width={20} height={20} />
@@ -2161,7 +1952,7 @@ function AiGradientIcon() {
   );
 }
 
-export default function WellComparison() {
+export default function WellDetail() {
   const [pageScrolled, setPageScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => setPageScrolled(window.scrollY > 0);
@@ -2172,8 +1963,6 @@ export default function WellComparison() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [themeMode, setThemeMode] = useState('dark');
   const [showcaseMode, setShowcaseMode] = useState(false);
-  const [wellSelectorOpen, setWellSelectorOpen] = useState(false);
-  const [selectedWell, setSelectedWell] = useState(WELL_B);
   const [aiFabOpen, setAiFabOpen] = useState(false);
   const [aiMessage, setAiMessage] = useState('');
   const aiInputRef = useRef<HTMLInputElement>(null);
@@ -2199,6 +1988,9 @@ export default function WellComparison() {
   const [dragTargetIdx, setDragTargetIdx] = useState<number | null>(null);
   const dragSrcRef = useRef<number | null>(null);
   const justOpenedAddFlow = useRef(false);
+
+  // suppress unused variable warnings for controlled inputs
+  void depthRange; void setDepthRange;
 
   function handleSectionDragStart(index: number, height: number) {
     dragSrcRef.current = index;
@@ -2270,7 +2062,7 @@ export default function WellComparison() {
   return (
     <Page>
       <Shell>
-        {/* ---- sticky top (top bar + selector row) ---- */}
+        {/* ---- sticky top (top bar only — no selector row) ---- */}
         <StickyTop $scrolled={pageScrolled}>
           <TopBar>
             <TopBarLeft>
@@ -2286,14 +2078,10 @@ export default function WellComparison() {
                       icon: <Icon iconName={IconName.HOUSE_DOOR} width={16} height={16} />,
                       href: '#',
                     },
-                    {
-                      label: WELL_A,
-                      href: '#',
-                    },
-                    { label: 'Comparison' },
+                    { label: WELL_A },
                   ]}
                 />
-                <Typography type="heading" size="lg" weight="semibold">Comparison</Typography>
+                <Typography type="heading" size="lg" weight="semibold">{WELL_A}</Typography>
               </TopBarTitleBlock>
               <TopBarActions>
                 <Button
@@ -2409,33 +2197,6 @@ export default function WellComparison() {
               </WorkspaceMenuWrap>
             </TopBarRight>
           </TopBar>
-
-          <SelectorRow>
-            <Selector disabled>
-              <span className="label">{WELL_A}</span>
-            </Selector>
-            <SelectorWrap>
-              <Selector onClick={() => setWellSelectorOpen(o => !o)}>
-                <span className="label">{selectedWell}</span>
-                <span className="divider" />
-                <Icon iconName={IconName.CHEVRON_DOWN} width={16} height={16} />
-              </Selector>
-              {wellSelectorOpen && (
-                <WellDropdown>
-                  {WELLS.map(w => (
-                    <WellOption
-                      key={w}
-                      $selected={w === selectedWell}
-                      onClick={() => { setSelectedWell(w); setWellSelectorOpen(false); }}
-                    >
-                      <Icon iconName={IconName.GEO_ALT} width={14} height={14} />
-                      {w}
-                    </WellOption>
-                  ))}
-                </WellDropdown>
-              )}
-            </SelectorWrap>
-          </SelectorRow>
         </StickyTop>
 
         <Main>
@@ -2495,6 +2256,7 @@ export default function WellComparison() {
                 </SectionFlowBtnWrap>
               );
             };
+
             const SECTION_CONTENT: Record<SectionId, JSX.Element> = {
               summary: (
                 <AccordionSection title={SECTION_META.summary.title} dimContent={toHideSections.has('summary') || hiddenSections.has('summary')} actions={addFlowActive ? getFlowAction('summary') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'summary' as SectionId]))} />}>
@@ -2529,18 +2291,12 @@ export default function WellComparison() {
               ),
               general: (
                 <AccordionSection title={SECTION_META.general.title} dimContent={toHideSections.has('general') || hiddenSections.has('general')} actions={addFlowActive ? getFlowAction('general') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'general' as SectionId]))} />}>
-                  <Pair>
-                    <InfoColumn rows={GENERAL_A} />
-                    <InfoColumn rows={GENERAL_B} />
-                  </Pair>
+                  <InfoColumn rows={GENERAL_A} />
                 </AccordionSection>
               ),
               offset: (
                 <AccordionSection title={SECTION_META.offset.title} dimContent={toHideSections.has('offset') || hiddenSections.has('offset')} actions={addFlowActive ? getFlowAction('offset') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'offset' as SectionId]))} />}>
-                  <Pair>
-                    <OffsetColumn />
-                    <OffsetColumn />
-                  </Pair>
+                  <OffsetColumn />
                 </AccordionSection>
               ),
               trends: (
@@ -2568,10 +2324,7 @@ export default function WellComparison() {
                     </div>
                   )}
                 >
-                  <Pair>
-                    <HccPanelRows rows={HCC_ROWS} />
-                    <HccPanelRows rows={HCC_ROWS} />
-                  </Pair>
+                  <HccPanelRows rows={HCC_ROWS} />
                 </AccordionSection>
               ),
               kpi: (
@@ -2622,14 +2375,9 @@ export default function WellComparison() {
                     </div>
                   )}
                 >
-                  <Pair>
-                    <InfoCard style={{ padding: 0, overflow: 'hidden' }}>
-                      <SampleColumn seedOffset={0} count={25} />
-                    </InfoCard>
-                    <InfoCard style={{ padding: 0, overflow: 'hidden' }}>
-                      <SampleColumn seedOffset={6} count={10} />
-                    </InfoCard>
-                  </Pair>
+                  <InfoCard style={{ padding: 0, overflow: 'hidden' }}>
+                    <SampleColumn seedOffset={0} count={25} />
+                  </InfoCard>
                 </AccordionSection>
               ),
               ar: (
@@ -2641,13 +2389,13 @@ export default function WellComparison() {
                   <Panel>
                     <ChartWrap>
                       <ChartTitleRow>
-                        <Legend labels={[WELL_A, WELL_B]} width="auto" />
+                        <ChartTitle>A/R Ratio by depth</ChartTitle>
                       </ChartTitleRow>
                       <LineChartDS
                         data={AR_CHART_DATA}
                         xKey="depth"
-                        yKeys={['wellA', 'wellB']}
-                        colors={[t.seriesA, t.seriesB]}
+                        yKeys={['well']}
+                        colors={[t.teal]}
                         height={300}
                         yLabel="A/R Ratio"
                         xLabel="Depth (ft)"
@@ -2701,7 +2449,7 @@ export default function WellComparison() {
         onMouseLeave={() => setAiFabOpen(false)}
       >
         <AiPanel $open={aiFabOpen}>
-          {['Summarize well differences', 'Compare ROP patterns', 'Identify formation anomalies'].map((s) => (
+          {['Summarize well performance', 'Identify drilling anomalies', 'Compare to offset wells'].map((s) => (
             <AiChip key={s}>{s}</AiChip>
           ))}
           <AiInputBorder>
