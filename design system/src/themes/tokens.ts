@@ -493,7 +493,7 @@ export const components = {
     md: {
       padding: `${spacing['2xs']} ${spacing['xs']}`,
     },
-		borderRadius: radii.sm,
+    borderRadius: radii.sm,
     sm: {
       padding: `${spacing['2xs']} ${spacing['xs']}`,
       gap: `${spacing['xs']}`,
@@ -551,7 +551,7 @@ export const colors = {
     gray: {
       '10': '#38393C',
       '11': '#2C2D30',
-      '12': '#1B1B1B',
+      '12': '#242424',
       '13': '#181818',
       '14': '#0B0B0B',
       '01': '#F5F5F5',

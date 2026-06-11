@@ -91,7 +91,7 @@ export const TBodyTr = styled.tr<{
   $selectedRow: boolean;
   $isExpanded?: boolean;
 }>`
-  vertical-align: top;
+  vertical-align: middle;
   background-color: ${({
     theme,
     $selectedRow = false,
@@ -120,6 +120,7 @@ export const Td = styled.td<{
   $size: TSizeTable;
   $showGridlines?: boolean;
 }>`
+  vertical-align: middle;
   padding: ${({ $size }) => padding?.[$size] || '8px 12px'};
   font-size: ${({ theme }) => theme.fontSizes['s']};
   line-height: ${({ theme }) => theme.lineHeights['m']};

@@ -24,7 +24,10 @@ export interface DepthBand {
 }
 
 export interface DepthBandRow {
+  /** y-axis label shown on the left of the bar */
   label: string;
+  /** optional tooltip title (e.g. the full well name); falls back to `label` */
+  name?: string;
   bands: DepthBand[];
 }
 
@@ -122,7 +125,6 @@ export function HBarChartDS({
       // tooltip layout — same geometry as LineChartDS
       const titlePadV = 8;
       const titlePadH = 12;
-      const titleH    = titlePadV * 2 + smLh;
       const legendPadV = 8;
       const legendPadH = 12;
       const rowH      = smLh + 8;
@@ -136,32 +138,53 @@ export function HBarChartDS({
         const [mx, my] = d3.pointer(event);
         const color      = colors[band.state] ?? '#888';
         const depthLabel = `${band.start.toLocaleString()}–${band.end.toLocaleString()} ft`;
-        const tipH       = titleH + 1 + legendPadV + rowH + legendPadV;
+        const maxTitleW  = tipW - titlePadH * 2;
 
+        tooltip.style('display', null);
+        tooltip.selectAll('*').remove();
+
+        // title — well name (falls back to the row's y-axis label); wraps to a
+        // second line when it doesn't fit the tooltip width
+        const titleText = row.name ?? row.label;
+        const titleEl = tooltip.append('text')
+          .attr('x', titlePadH)
+          .attr('y', titlePadV)
+          .attr('fill', ink1)
+          .attr('font-size', smFs)
+          .attr('font-family', fontFamilies.body)
+          .attr('font-weight', fwReg);
+
+        const words = titleText.split(/\s+/).filter(Boolean);
+        let lineWords: string[] = [];
+        let titleLines = 1;
+        let tspan = titleEl.append('tspan').attr('x', titlePadH).attr('dy', smLh);
+        words.forEach((word) => {
+          lineWords.push(word);
+          tspan.text(lineWords.join(' '));
+          if (tspan.node()!.getComputedTextLength() > maxTitleW && lineWords.length > 1) {
+            lineWords.pop();
+            tspan.text(lineWords.join(' '));
+            lineWords = [word];
+            tspan = titleEl.append('tspan').attr('x', titlePadH).attr('dy', smLh).text(word);
+            titleLines++;
+          }
+        });
+
+        const titleH = titlePadV * 2 + smLh * titleLines;
+        const tipH   = titleH + 1 + legendPadV + rowH + legendPadV;
+
+        // position now that the height is known
         const flip = mx + tipW + 12 > W - mR;
         const tx   = flip ? mx - tipW - 8 : mx + 8;
         const ty   = Math.max(mT, my - tipH / 2);
-        tooltip.attr('transform', `translate(${tx},${ty})`).style('display', null);
-        tooltip.selectAll('*').remove();
+        tooltip.attr('transform', `translate(${tx},${ty})`);
 
-        // background
-        tooltip.append('rect')
+        // background — inserted behind the title
+        tooltip.insert('rect', ':first-child')
           .attr('width', tipW).attr('height', tipH)
           .attr('rx', 8)
           .attr('fill', surfaceBg)
           .attr('stroke', borderWeakest);
-
-        // title — state name
-        tooltip.append('text')
-          .attr('x', titlePadH)
-          .attr('y', titlePadV + smLh / 2)
-          .attr('dominant-baseline', 'middle')
-          .attr('fill', ink1)
-          .attr('font-size', smFs)
-          .attr('line-height', smLh)
-          .attr('font-family', fontFamilies.body)
-          .attr('font-weight', fwReg)
-          .text(band.state);
 
         // divider
         tooltip.append('line')
@@ -169,7 +192,7 @@ export function HBarChartDS({
           .attr('y1', titleH).attr('y2', titleH)
           .attr('stroke', borderWeakest).attr('stroke-width', 1);
 
-        // legend row — row label + depth range
+        // legend row — state + depth range
         const gy = titleH + 1 + legendPadV + rowH / 2;
         const g  = tooltip.append('g').attr('transform', `translate(${legendPadH},${gy})`);
 
@@ -187,7 +210,7 @@ export function HBarChartDS({
           .attr('line-height', smLh)
           .attr('font-family', fontFamilies.body)
           .attr('font-weight', fwReg)
-          .text(row.label);
+          .text(band.state);
 
         g.append('text')
           .attr('x', tipW - legendPadH * 2).attr('y', 0)

@@ -1,5 +1,5 @@
 import { useState, useRef, useLayoutEffect, useEffect, type JSX } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 import {
   darkTheme,
   spacing,
@@ -46,6 +46,9 @@ import { HBarChartDS } from '@src/components/HorizontalBarChart';
 import { Legend } from '@src/components/Legend';
 import { LegendContainer, LegendItem } from '@src/components/Legend/styles';
 import SortDropdown from '@src/components/Sort';
+import { KpiCard, KpiDetailItem, type KpiRange } from '@/src/local components/KpiCards/KpiCards';
+import { SampleCard } from '@/src/local components/SampleCard/SampleCard';
+import { AiChat, AiGradientIcon } from '@/src/local components/AiChat/AiChat';
 
 /* ------------------------------------------------------------------ *
  * Comparison / Well vs Well
@@ -302,7 +305,7 @@ const Selector = styled.button`
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: ${spacing.xs};
+  gap: ${space['12px']};
   padding: ${space['10px']} ${spacing.md};
   background: ${t.surface};
   border: 1px solid ${t.borderStrong};
@@ -314,12 +317,11 @@ const Selector = styled.button`
   }
   &:disabled {
     cursor: default;
-    opacity: 0.45;
     border-color: ${t.border};
     &:hover { border-color: ${t.border}; }
   }
   .label {
-    flex: 1 0 0;
+    flex: 0 1 auto;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -330,8 +332,10 @@ const Selector = styled.button`
   }
   .divider {
     width: 1px;
-    align-self: stretch;
-    background: ${t.border};
+    height: ${space['16px']};
+    align-self: center;
+    margin-left: auto;
+    background: ${d.neutral.border.weaker};
   }
 `;
 
@@ -339,6 +343,31 @@ const SelectorWrap = styled.div`
   flex: 1 0 0;
   min-width: 0;
   position: relative;
+`;
+
+const AiBadge = styled.span`
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: ${space['4px']};
+  border-radius: ${radii.xl};
+  background-color: ${d.neutral.background.baseInverted};
+  background-image: radial-gradient(
+    ellipse 130% 155% at 50% -22%,
+    ${d.primary.background.strong} 0%,
+    ${d.neutral.background.baseInverted} 88%
+  );
+  color: ${d.neutral.text.inverted.default};
+  box-shadow:
+    inset 0 1px 1px -0.5px ${d.transparent.white['72%']},
+    0 0 0 1px ${d.transparent.white['12%']},
+    0 0 16px 0 ${d.primary.background.transparent.default};
+  font-family: ${fontFamilies.body};
+  font-size: ${fontSizes.xs};
+  line-height: ${fontSizes.xs};
+  font-weight: ${fontWeights.regular};
+  white-space: nowrap;
 `;
 
 const WellDropdown = styled.div`
@@ -419,16 +448,15 @@ const CardBodyWrap = styled.div`
   }
 `;
 const CardRow = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: ${space['12px']};
   align-items: stretch;
-  flex-wrap: wrap;
 `;
 const AICard = styled.div`
   position: relative;
   overflow: hidden;
-  flex: 1 0 0;
-  min-width: ${space['224px']};
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: ${space['16px']};
@@ -490,26 +518,22 @@ const InfoCard = styled.div`
   border: 1px solid ${d.neutral.border.weaker};
   border-radius: ${radii.md};
 `;
+const OffsetCard = styled(InfoCard)`
+  position: relative;
+`;
+const OffsetKpiRow = styled.div`
+  position: absolute;
+  left: ${spacing.md};
+  bottom: ${spacing.md};
+  display: flex;
+  gap: ${spacing.md};
+`;
 const InfoGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: ${spacing.md};
   @media (min-width: 1800px) {
     grid-template-columns: 1fr 1fr 1fr;
-  }
-  .k {
-    color: ${t.ink4};
-  }
-  .v {
-    color: ${t.ink};
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .cell {
-    display: flex;
-    flex-direction: column;
-    gap: ${space['4px']};
   }
 `;
 
@@ -524,18 +548,16 @@ const OffsetTreeWrap = styled.div`
 `;
 const OffsetPadCol = styled.div`
   flex: none;
-  width: auto;
-  align-self: center;
+  align-self: flex-start;
 `;
 const OffsetPadChip = styled.button`
   display: inline-flex;
   flex-direction: column;
   gap: ${space['4px']};
   padding: ${spacing['2xs']};
-  width: ${space['240px']};
-  border: 1px solid ${t.borderStrong};
-  border-radius: ${radii.md};
-  background: transparent;
+  border: none;
+  border-radius: ${radii.sm};
+  background: ${t.canvas};
   cursor: default;
   text-align: left;
   svg path { fill: ${t.teal}; }
@@ -550,33 +572,15 @@ const PadChipTitle = styled.div`
   font-weight: ${fontWeights.semibold};
   white-space: nowrap;
 `;
-const PadChipKpiRow = styled.div`
-  display: flex;
-  flex-direction: column;
-  background: ${t.canvas};
-  border-radius: ${radii.sm};
-  overflow: hidden;
-`;
-const PadChipKpiItem = styled.div`
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${spacing.md};
-  padding: ${spacing.xs};
-  white-space: nowrap;
-  & + & {
-    border-top: 1px solid ${t.border};
-  }
-`;
 const OffsetConnectorWrap = styled.div`
   flex: 1;
   min-width: 0;
   align-self: stretch;
 `;
 const OffsetWellsCol = styled.div`
-  flex: none;
-  width: 360px;
+  flex: 1 1 0;
+  min-width: 320px;
+  max-width: 480px;
   display: flex;
   flex-direction: column;
   gap: ${spacing.xs};
@@ -584,7 +588,6 @@ const OffsetWellsCol = styled.div`
 const OffsetWellCard = styled.div<{ $v: StageVariant }>`
   padding: ${spacing.sm};
   border-radius: ${radii.sm};
-  border: 1px solid ${d.neutral.border.weaker};
   background: ${t.canvas};
   opacity: 1;
 `;
@@ -652,7 +655,7 @@ const HccPanelCard = styled(InfoCard)`
 const HccRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${spacing.xs};
+  gap: ${space['12px']};
   min-height: 72px;
   padding: ${spacing.xs} ${spacing.sm};
   & + & {
@@ -671,22 +674,55 @@ const HccChartCell = styled.div`
 
 
 const HccDescCell = styled.div`
-  flex: 1 1 0;
+  flex: 2 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: ${space['4px']};
   padding: ${spacing.xs} ${spacing.xs} ${spacing.xs} 0;
+  /* truncate copy on one line once it exceeds the available width */
+  & > * {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
 `;
 
 const HccMetaCell = styled.div`
-  flex: none;
-  width: ${space['160px']};
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: ${space['2px']};
   padding: ${spacing.xs} ${spacing.md};
 `;
+
+const ValueUnitRow = styled.span`
+  display: flex;
+  align-items: baseline;
+  gap: ${space['4px']};
+  flex-wrap: wrap;
+`;
+const ValueUnitNum = styled.span`
+  font-family: ${fontFamilies.body};
+  font-size: ${fontSizes.s};
+  font-weight: ${fontWeights.regular};
+  color: ${t.ink};
+  font-variant-numeric: tabular-nums;
+`;
+const ValueUnitLabel = styled.span`
+  font-family: ${fontFamilies.body};
+  font-size: ${fontSizes.xs};
+  color: ${t.ink3};
+`;
+function ValueUnit({ value, unit }: { value: React.ReactNode; unit?: string }) {
+  return (
+    <ValueUnitRow>
+      <ValueUnitNum>{value}</ValueUnitNum>
+      {unit && <ValueUnitLabel>{unit}</ValueUnitLabel>}
+    </ValueUnitRow>
+  );
+}
 
 /* --------------------------- kpi summary -------------------------- */
 
@@ -698,83 +734,29 @@ const KpiSummaryGrid = styled.div`
   @media (min-width: 1800px) {
     grid-template-columns: repeat(3, 1fr);
   }
+
+  /* dividers drawn on the cards (each child is an imported KpiCard root) */
+  & > * {
+    border-right: 1px solid ${d.neutral.border.weaker};
+    border-bottom: 1px solid ${d.neutral.border.weaker};
+  }
+
+  /* 2-column rules (default) */
+  & > *:nth-child(2n)                          { border-right: none; }
+  & > *:last-child                             { border-right: 1px solid ${d.neutral.border.weaker}; border-bottom: none; }
+  & > *:nth-last-child(-n+2):nth-child(2n+1)   { border-bottom: none; }
+
+  /* 3-column rules */
+  @media (min-width: 1800px) {
+    & > *:nth-child(2n)                        { border-right: 1px solid ${d.neutral.border.weaker}; }
+    & > *:nth-child(3n)                        { border-right: none; }
+    & > *:nth-last-child(-n+2)                 { border-bottom: none; }
+    & > *:last-child                           { border-bottom: none; }
+  }
 `;
 const KpiInfoCard = styled(InfoCard)`
   padding: 0;
   overflow: hidden;
-`;
-const KpiSummaryCard = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: ${spacing.lg};
-  padding: ${spacing.md};
-  background: transparent;
-  border-right: 1px solid ${d.neutral.border.weaker};
-  border-bottom: 1px solid ${d.neutral.border.weaker};
-
-  /* 2-column rules (default) */
-  &:nth-child(2n)                            { border-right: none; }
-  &:last-child                               { border-right: 1px solid ${d.neutral.border.weaker}; border-bottom: none; }
-  &:nth-last-child(-n+2):nth-child(2n+1)    { border-bottom: none; }
-
-  /* 3-column rules */
-  @media (min-width: 1800px) {
-    &:nth-child(2n)                          { border-right: 1px solid ${d.neutral.border.weaker}; }
-    &:nth-child(3n)                          { border-right: none; }
-    &:nth-last-child(-n+2)                   { border-bottom: none; }
-    &:last-child                             { border-bottom: none; }
-  }
-`;
-const KpiSummaryTop = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-`;
-const KpiSummaryLabelRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${spacing.xs};
-`;
-const KpiValueBlock = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${space['4px']};
-`;
-const KpiValueRow = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: ${space['6px']};
-`;
-const KpiValueNum = styled.span`
-  font-size: ${fontSizes['2xl']};
-  font-weight: ${fontWeights.regular};
-  color: ${t.ink};
-  font-variant-numeric: tabular-nums;
-  line-height: ${lineHeights['2xl']};
-`;
-const KpiCardBottom = styled.div`
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: ${spacing.sm};
-`;
-
-const KpiDelta = styled.span`
-  display: flex;
-  align-items: center;
-  gap: ${space['4px']};
-  font-size: ${fontSizes.xs};
-`;
-const KpiDeltaUp = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${space['4px']};
-  color: ${t.stateStable};
-  svg path { fill: ${t.stateStable}; }
-`;
-const KpiDeltaLabel = styled.span`
-  color: ${t.ink3};
 `;
 
 /* ------------------------- samples by depth ----------------------- */
@@ -821,86 +803,6 @@ const TileGrid = styled.div`
   gap: ${space['16px']};
   padding: ${space['16px']};
 `;
-const Tile = styled.div`
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: ${space['12px']};
-  border-radius: ${radii.sm};
-  height: 100%;
-  cursor: pointer;
-  &:hover > *:first-child {
-    border-color: ${t.tealHi};
-  }
-  &:hover img {
-    transform: scale(1.09);
-  }
-`;
-const TileImgWrap = styled.div`
-  flex: none;
-  width: ${space['96px']};
-  align-self: stretch;
-  border-radius: ${radii.sm};
-  border: 1px solid transparent;
-  overflow: hidden;
-  transition: border-color 0.15s ease;
-`;
-const TileImg = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.2s ease;
-`;
-const TileBody = styled.div`
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: ${space['8px']};
-`;
-
-const TileDepthRow = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: ${space['4px']};
-`;
-const TileDepthValue = styled.span`
-  font-family: ${fontFamilies.body};
-  font-size: ${fontSizes.m};
-  font-weight: ${fontWeights.semibold};
-  color: ${t.ink};
-  font-variant-numeric: tabular-nums;
-`;
-const TileSmall = styled.span`
-  font-family: ${fontFamilies.body};
-  font-size: ${fontSizes.xs};
-  font-weight: ${fontWeights.regular};
-  color: ${t.ink4};
-`;
-const TileTitleGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${space['4px']};
-`;
-const TileDateRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${space['6px']};
-  svg path { fill: ${t.ink4}; }
-`;
-const TileIdRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${space['4px']};
-  svg path { fill: ${t.ink2}; }
-`;
-const TileIdLabel = styled.span`
-  font-family: ${fontFamilies.body};
-  font-size: ${fontSizes.s};
-  font-weight: ${fontWeights.regular};
-  color: ${t.ink2};
-`;
 
 
 const Footer = styled.footer`
@@ -920,44 +822,6 @@ const FooterLink = styled.a`
   &:hover { color: ${darkTheme.colors.components.link.text.hover}; }
   &:active { color: ${darkTheme.colors.components.link.text.active}; }
 `;
-
-const AiFab = styled.button<{ $open?: boolean }>`
-  width: ${space['48px']};
-  height: ${space['48px']};
-  border-radius: ${radii.xl} ${radii.xl} ${radii.sm} ${radii.xl};
-  border: none;
-  background: linear-gradient(135deg, ${d.neutral.background.baseInverted} 0%, ${t.teal} 55%, ${t.canvas} 100%);
-  padding: ${space['4px']};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 -10px 28px 0 ${t.tealSoftHi}, 0 4px 16px 0 rgba(0, 0, 0, 0.36);
-  height: ${p => p.$open ? '0' : space['48px']};
-  overflow: hidden;
-  opacity: ${p => p.$open ? 0 : 1};
-  pointer-events: ${p => p.$open ? 'none' : 'all'};
-  transition: opacity 0.15s ease, height 0.2s ease, box-shadow 0.18s ease-in-out;
-  &:hover {
-    box-shadow: 0 -14px 36px 0 ${t.tealSoftHi}, 0 6px 20px 0 rgba(0, 0, 0, 0.44);
-  }
-`;
-
-const AiFabMiddle = styled.span<{ $open?: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  background: ${t.canvas};
-  border: 1.5px solid ${p => p.$open ? t.canvas : d.neutral.background.transparent.backdrop};
-  position: relative;
-  overflow: hidden;
-  transition: border-color 0.15s ease;
-  > svg { position: relative; z-index: 1; }
-`;
-
 
 /* ============================== data ============================== */
 
@@ -1048,36 +912,60 @@ const GENERAL_B: InfoRow[] = [
 
 type StageVariant = 'active' | 'completed' | 'drilling' | 'planned';
 type StageRow = { name: string; status: BagdeTypes; statusLabel: string; pct: number; bar: 'accent' | 'default'; icon: IconNameType; variant: StageVariant };
-const OFFSET_STAGES: StageRow[] = [
+type OffsetPad = { name: string; spacing: string; formationDepth: string; currentStage: string };
+
+const OFFSET_PAD_A: OffsetPad = { name: 'Wolfcamp B', spacing: '325 ft', formationDepth: `${fmt(9350)} ft`, currentStage: 'Curve' };
+const OFFSET_STAGES_A: StageRow[] = [
   { name: 'Well 1', status: 'info', statusLabel: 'Active', pct: 5, bar: 'accent', icon: IconName.POWER, variant: 'active' },
   { name: 'Well 2', status: 'success', statusLabel: 'Completed', pct: 100, bar: 'default', icon: IconName.CHECK_SIMPLE, variant: 'completed' },
   { name: 'Well 3', status: 'info', statusLabel: 'Drilling', pct: 34, bar: 'accent', icon: IconName.ARROW_CLOCKWISE, variant: 'drilling' },
   { name: 'Offset A', status: 'default', statusLabel: 'Planned', pct: 0, bar: 'default', icon: IconName.CLOCK, variant: 'planned' },
 ];
 
+const OFFSET_PAD_B: OffsetPad = { name: 'Spraberry 4', spacing: '410 ft', formationDepth: `${fmt(9820)} ft`, currentStage: 'Lateral' };
+const OFFSET_STAGES_B: StageRow[] = [
+  { name: 'Well 1', status: 'success', statusLabel: 'Completed', pct: 100, bar: 'default', icon: IconName.CHECK_SIMPLE, variant: 'completed' },
+  { name: 'Well 2', status: 'info', statusLabel: 'Drilling', pct: 62, bar: 'accent', icon: IconName.ARROW_CLOCKWISE, variant: 'drilling' },
+  { name: 'Well 3', status: 'info', statusLabel: 'Active', pct: 18, bar: 'accent', icon: IconName.POWER, variant: 'active' },
+  { name: 'Offset B', status: 'default', statusLabel: 'Planned', pct: 0, bar: 'default', icon: IconName.CLOCK, variant: 'planned' },
+];
+
 type KpiSummary = { label: string; unit: string; value: number; delta: number; icon: IconNameType };
 const KPI_SUMMARY: KpiSummary[] = [
-  { label: 'ROP', unit: 'ft/hr', value: 38.78, delta: 5.4, icon: IconName.SPEEDOMETER_2 },
-  { label: 'WOB', unit: 'klbs', value: 24.23, delta: 5.4, icon: IconName.ARROW_DOWN_CIRCLE },
-  { label: 'RPM', unit: 'rpm', value: 312.56, delta: 5.4, icon: IconName.ARROW_CLOCKWISE },
-  { label: 'String Wt', unit: 'klbs', value: 347.81, delta: 5.4, icon: IconName.DIAGRAM_3 },
-  { label: 'SPP', unit: 'psi', value: 6008.21, delta: 5.4, icon: IconName.SPEEDOMETER },
-  { label: 'Diff Press', unit: 'psi', value: 90.69, delta: 5.4, icon: IconName.BAR_CHART_LINE },
-  { label: 'Torque', unit: 'kft-lb', value: 38.78, delta: 5.4, icon: IconName.WRENCH_ADJUSTABLE },
-  { label: 'Flow Rate', unit: 'gpm', value: 24.23, delta: 5.4, icon: IconName.DROPLET },
-  { label: 'MSE', unit: 'ksi', value: 312.56, delta: 5.4, icon: IconName.LIGHTNING },
+  { label: 'ROP', unit: 'ft/hr', value: 182.0, delta: 5.4, icon: IconName.SPEEDOMETER_2 },        // above band
+  { label: 'WOB', unit: 'klbs', value: 38.2, delta: -3.2, icon: IconName.ARROW_DOWN_CIRCLE },
+  { label: 'RPM', unit: 'rpm', value: 205.0, delta: 2.8, icon: IconName.ARROW_CLOCKWISE },          // above band
+  { label: 'String Wt', unit: 'klbs', value: 486.0, delta: -1.6, icon: IconName.DIAGRAM_3 },
+  { label: 'SPP', unit: 'psi', value: 8650.0, delta: 4.1, icon: IconName.SPEEDOMETER },             // above band
+  { label: 'Diff Press', unit: 'psi', value: 640.0, delta: -7.3, icon: IconName.BAR_CHART_LINE },
+  { label: 'Torque', unit: 'kft-lb', value: 68.0, delta: 6.2, icon: IconName.WRENCH_ADJUSTABLE },   // above band
+  { label: 'Flow Rate', unit: 'gpm', value: 620.0, delta: -2.4, icon: IconName.DROPLET },
+  { label: 'MSE', unit: 'ksi', value: 168.0, delta: 3.5, icon: IconName.LIGHTNING },
 ];
 const KPI_SUMMARY_B: KpiSummary[] = [
-  { label: 'ROP', unit: 'ft/hr', value: 34.21, delta: 2.1, icon: IconName.SPEEDOMETER_2 },
-  { label: 'WOB', unit: 'klbs', value: 26.87, delta: 8.3, icon: IconName.ARROW_DOWN_CIRCLE },
-  { label: 'RPM', unit: 'rpm', value: 298.14, delta: 1.7, icon: IconName.ARROW_CLOCKWISE },
-  { label: 'String Wt', unit: 'klbs', value: 361.42, delta: 7.2, icon: IconName.DIAGRAM_3 },
-  { label: 'SPP', unit: 'psi', value: 5742.33, delta: 3.8, icon: IconName.SPEEDOMETER },
-  { label: 'Diff Press', unit: 'psi', value: 104.35, delta: 12.6, icon: IconName.BAR_CHART_LINE },
-  { label: 'Torque', unit: 'kft-lb', value: 41.22, delta: 6.4, icon: IconName.WRENCH_ADJUSTABLE },
-  { label: 'Flow Rate', unit: 'gpm', value: 22.81, delta: 4.9, icon: IconName.DROPLET },
-  { label: 'MSE', unit: 'ksi', value: 334.78, delta: 9.2, icon: IconName.LIGHTNING },
+  { label: 'ROP', unit: 'ft/hr', value: 98.7, delta: -2.1, icon: IconName.SPEEDOMETER_2 },
+  { label: 'WOB', unit: 'klbs', value: 64.0, delta: 8.3, icon: IconName.ARROW_DOWN_CIRCLE },        // above band
+  { label: 'RPM', unit: 'rpm', value: 128.3, delta: -1.7, icon: IconName.ARROW_CLOCKWISE },
+  { label: 'String Wt', unit: 'klbs', value: 812.0, delta: 7.2, icon: IconName.DIAGRAM_3 },         // above band
+  { label: 'SPP', unit: 'psi', value: 4890.0, delta: -3.8, icon: IconName.SPEEDOMETER },
+  { label: 'Diff Press', unit: 'psi', value: 1280.0, delta: 12.6, icon: IconName.BAR_CHART_LINE },  // above band
+  { label: 'Torque', unit: 'kft-lb', value: 38.4, delta: -6.4, icon: IconName.WRENCH_ADJUSTABLE },
+  { label: 'Flow Rate', unit: 'gpm', value: 240.0, delta: 4.9, icon: IconName.DROPLET },            // below band
+  { label: 'MSE', unit: 'ksi', value: 142.0, delta: -9.2, icon: IconName.LIGHTNING },
 ];
+
+// chart range (track extent) + suggested normal/working band (success region) per metric
+const KPI_RANGES: Record<string, KpiRange> = {
+  'ROP':        { max: 250,   bandLow: 20,   bandHigh: 150 },
+  'WOB':        { max: 80,    bandLow: 10,   bandHigh: 50 },
+  'RPM':        { max: 250,   bandLow: 60,   bandHigh: 180 },
+  'String Wt':  { max: 1000,  bandLow: 100,  bandHigh: 700 },
+  'SPP':        { max: 10000, bandLow: 2000, bandHigh: 7500 },
+  'Diff Press': { max: 1500,  bandLow: 200,  bandHigh: 1000 },
+  'Torque':     { max: 80,    bandLow: 5,    bandHigh: 50 },
+  'Flow Rate':  { max: 1200,  bandLow: 300,  bandHigh: 900 },
+  'MSE':        { max: 500,   bandLow: 20,   bandHigh: 250 },
+};
 
 
 // ---- correlation chart data (deterministic, generated once) ----
@@ -1154,7 +1042,7 @@ type HccCorr = {
   confidenceLabel?: string;
 };
 
-const HCC_ROWS: HccCorr[] = [
+const HCC_ROWS_A: HccCorr[] = [
   {
     kpi: 'ROP',
     desc: 'Decreases shortly after Mn concentration spikes',
@@ -1185,6 +1073,41 @@ const HCC_ROWS: HccCorr[] = [
     depth: '210',
     depthUnit: 'ft ahead',
     confidence: 87,
+    confidenceUnit: '%',
+  },
+];
+
+const HCC_ROWS_B: HccCorr[] = [
+  {
+    kpi: 'ROP',
+    desc: 'Drops as differential pressure exceeds 110 psi',
+    pct: 24,
+    pctPrefix: '~',
+    depth: '6,050–6,480',
+    depthUnit: 'ft',
+    confidence: 89,
+    confidenceUnit: '%',
+  },
+  {
+    kpi: 'Bit wear',
+    desc: 'Rises sharply through the lateral interval',
+    pct: 27,
+    pctPrefix: '>',
+    depth: '7,200–8,100',
+    depthUnit: 'ft',
+    confidence: 'Lateral',
+    confidenceUnit: '',
+    confidenceLabel: 'Affects',
+  },
+  {
+    kpi: 'Zn/Mn ratio',
+    desc: 'Leads formation transition signal',
+    pct: 9,
+    displayPct: '0.09',
+    pctPrefix: '~',
+    depth: '180',
+    depthUnit: 'ft ahead',
+    confidence: 83,
     confidenceUnit: '%',
   },
 ];
@@ -1220,8 +1143,8 @@ const STATE_COLORS: Record<string, string> = {
   event:  d.dataViz.qualitative_2_1[1],
 };
 const VERTICAL_SECTION_ROWS = [
-  { label: 'Well 1', bands: toDepthBands(BAND_A) },
-  { label: 'Well 2', bands: toDepthBands(BAND_B) },
+  { label: 'Well 1', name: WELL_A, bands: toDepthBands(BAND_A) },
+  { label: 'Well 2', name: WELL_B, bands: toDepthBands(BAND_B) },
 ];
 
 const SECTION_IDS = ['summary', 'general', 'offset', 'trends', 'kpi', 'correlation', 'samples', 'ar'] as const;
@@ -1298,26 +1221,7 @@ function HccPanelRows({ rows }: { rows: HccCorr[] }) {
             <Typography type="body" size="md" weight="regular" color="weaker">
               Depth
             </Typography>
-            <span style={{ display: 'flex', alignItems: 'baseline', gap: space['4px'] }}>
-              <span style={{
-                fontFamily: fontFamilies.body,
-                fontSize: fontSizes.s,
-                fontWeight: fontWeights.regular,
-                color: t.ink,
-                fontVariantNumeric: 'tabular-nums',
-              }}>
-                {row.depth}
-              </span>
-              {row.depthUnit && (
-                <span style={{
-                  fontFamily: fontFamilies.body,
-                  fontSize: fontSizes.xs,
-                  color: t.ink3,
-                }}>
-                  {row.depthUnit}
-                </span>
-              )}
-            </span>
+            <ValueUnit value={row.depth} unit={row.depthUnit} />
           </HccMetaCell>
 
           {/* confidence column */}
@@ -1325,26 +1229,7 @@ function HccPanelRows({ rows }: { rows: HccCorr[] }) {
             <Typography type="body" size="md" weight="regular" color="weaker">
               {row.confidenceLabel ?? 'Confidence'}
             </Typography>
-            <span style={{ display: 'flex', alignItems: 'baseline', gap: space['4px'], flexWrap: 'wrap' }}>
-              <span style={{
-                fontFamily: fontFamilies.body,
-                fontSize: fontSizes.s,
-                fontWeight: fontWeights.regular,
-                color: t.ink,
-                fontVariantNumeric: 'tabular-nums',
-              }}>
-                {row.confidence}
-              </span>
-              {row.confidenceUnit && (
-                <span style={{
-                  fontFamily: fontFamilies.body,
-                  fontSize: fontSizes.xs,
-                  color: t.ink3,
-                }}>
-                  {row.confidenceUnit}
-                </span>
-              )}
-            </span>
+            <ValueUnit value={row.confidence} unit={row.confidenceUnit} />
           </HccMetaCell>
         </HccRow>
       ))}
@@ -1452,31 +1337,10 @@ function InfoColumn({ rows }: { rows: InfoRow[] }) {
     <InfoCard>
       <InfoGrid>
         {rows.map((r) => (
-          <div className="cell" key={r.k}>
-            <Typography type="body" size="md" color="weaker">
-              <span className="k">{r.k}</span>
-            </Typography>
-            <Typography type="body" size="md" as="div">
-              <span className="v">{r.v}</span>
-            </Typography>
-          </div>
+          <KpiDetailItem key={r.k} label={r.k} value={r.v} />
         ))}
-        <div className="cell">
-          <Typography type="body" size="md" color="weaker">
-            <span className="k">Status</span>
-          </Typography>
-          <Typography type="body" size="md" variant="primary">
-            Active
-          </Typography>
-        </div>
-        <div className="cell">
-          <Typography type="body" size="md" color="weaker">
-            <span className="k">Created at</span>
-          </Typography>
-          <Typography type="body" size="md" as="div">
-            <span className="v">12/08/2025 - 16:49</span>
-          </Typography>
-        </div>
+        <KpiDetailItem label="Status" value="Active" emphasis />
+        <KpiDetailItem label="Created at" value="12/08/2025 - 16:49" />
       </InfoGrid>
     </InfoCard>
   );
@@ -1500,24 +1364,24 @@ function OffsetConnectorSVG({ totalH, ys, W, padY }: { totalH: number; ys: numbe
         return (
           <g key={i}>
             <path d={d} fill="none" stroke={`url(#cg-${i})`} strokeWidth={1} />
-            <circle cx={W} cy={y} r={4} fill={t.canvas} stroke={t.borderWeak} strokeWidth={1} />
+            <circle cx={W} cy={y} r={4} fill={t.borderWeakest} stroke={t.canvas} strokeWidth={2} />
           </g>
         );
       })}
       {/* origin dot rendered once so it matches terminal dots visually */}
-      <circle cx={0} cy={padY} r={4} fill={t.canvas} stroke={t.borderWeak} strokeWidth={1} />
+      <circle cx={0} cy={padY} r={4} fill={t.borderWeakest} stroke={t.canvas} strokeWidth={2} />
     </svg>
   );
 }
 
-function OffsetColumn() {
+function OffsetColumn({ pad, stages }: { pad: OffsetPad; stages: StageRow[] }) {
   const colRef = useRef<HTMLDivElement>(null);
   const connWrapRef = useRef<HTMLDivElement>(null);
   const padRef = useRef<HTMLButtonElement>(null);
   const titleRefs = useRef<(HTMLDivElement | null)[]>([]);
   const [conn, setConn] = useState<{ h: number; ys: number[]; W: number; padY: number }>({
-    h: OFFSET_STAGES.length * WELL_CARD_H + (OFFSET_STAGES.length - 1) * WELL_CARD_GAP,
-    ys: OFFSET_STAGES.map((_, i) => i * (WELL_CARD_H + WELL_CARD_GAP) + 18),
+    h: stages.length * WELL_CARD_H + (stages.length - 1) * WELL_CARD_GAP,
+    ys: stages.map((_, i) => i * (WELL_CARD_H + WELL_CARD_GAP) + 18),
     W: 60,
     padY: 18,
   });
@@ -1549,35 +1413,21 @@ function OffsetColumn() {
   }, []);
 
   return (
-    <InfoCard>
+    <OffsetCard>
       <OffsetTreeWrap>
         <OffsetPadCol>
           <OffsetPadChip ref={padRef}>
             <PadChipTitle>
               <Icon iconName={IconName.GRID_3_X_3} width={14} height={14} />
-              PAD: "Wolfcamp B"
+              PAD: "{pad.name}"
             </PadChipTitle>
-            <PadChipKpiRow>
-              <PadChipKpiItem>
-                <Typography type="body" size="md" color="weaker">Spacing</Typography>
-                <Typography type="body" size="md">325 ft</Typography>
-              </PadChipKpiItem>
-              <PadChipKpiItem>
-                <Typography type="body" size="md" color="weaker">Formation depth</Typography>
-                <Typography type="body" size="md">{fmt(9350)} ft</Typography>
-              </PadChipKpiItem>
-              <PadChipKpiItem>
-                <Typography type="body" size="md" color="weaker">Current stage</Typography>
-                <Typography type="body" size="md">Curve</Typography>
-              </PadChipKpiItem>
-            </PadChipKpiRow>
           </OffsetPadChip>
         </OffsetPadCol>
         <OffsetConnectorWrap ref={connWrapRef}>
           <OffsetConnectorSVG totalH={conn.h} ys={conn.ys} W={conn.W} padY={conn.padY} />
         </OffsetConnectorWrap>
         <OffsetWellsCol ref={colRef}>
-          {OFFSET_STAGES.map((s, i) => (
+          {stages.map((s, i) => (
             <OffsetWellCard key={s.name} $v={s.variant} ref={(el) => { titleRefs.current[i] = el; }}>
               <OffsetWellTop>
                 <Typography type="body" size="md" weight="semibold">{s.name}</Typography>
@@ -1600,71 +1450,14 @@ function OffsetColumn() {
         </OffsetWellsCol>
       </OffsetTreeWrap>
 
-    </InfoCard>
+      <OffsetKpiRow>
+        <KpiDetailItem label="Spacing" value={pad.spacing} />
+        <KpiDetailItem label="Formation depth" value={pad.formationDepth} />
+        <KpiDetailItem label="Current stage" value={pad.currentStage} />
+      </OffsetKpiRow>
+    </OffsetCard>
   );
 }
-
-// fill1 = row 1 (this well), fill2 = row 2 (comparison well)
-function MiniDotGrid({ fill1, fill2, well }: { fill1: number; fill2: number; well: 'a' | 'b' }) {
-  const DOTS = 10, R = 2.5, GAP = 6, ROW_GAP = 5;
-  const W = (DOTS - 1) * GAP + R * 2;
-  const H = R * 2 + ROW_GAP + R * 2;
-  const color1 = well === 'a' ? t.seriesA : t.ink3;
-  const color2 = well === 'a' ? t.ink3 : t.seriesB;
-  const empty = d.neutral.border.weaker;
-  const row = (fill: number, color: string, y: number) =>
-    Array.from({ length: DOTS }, (_, i) => (
-      <circle key={i} cx={i * GAP + R} cy={y} r={R} fill={i < fill ? color : empty} />
-    ));
-  return (
-    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} style={{ flexShrink: 0 }}>
-      {row(fill1, color1, R)}
-      {row(fill2, color2, R + ROW_GAP + R * 2)}
-    </svg>
-  );
-}
-
-function KpiCard({ kpi, well, fill1, fill2 }: { kpi: KpiSummary; well: 'a' | 'b'; fill1: number; fill2: number }) {
-  return (
-    <KpiSummaryCard>
-      <KpiSummaryTop>
-        <KpiSummaryLabelRow>
-          <Icon iconName={kpi.icon} width={14} height={14} />
-          <Typography type="body" size="md" color="weaker">
-            {kpi.label}
-          </Typography>
-        </KpiSummaryLabelRow>
-      </KpiSummaryTop>
-      <KpiCardBottom>
-        <KpiValueBlock>
-          <KpiValueRow>
-            <KpiValueNum>{kpi.value.toLocaleString('en-US')}</KpiValueNum>
-            <span style={{ fontFamily: fontFamilies.body, fontSize: fontSizes.s, color: t.ink4 }}>
-              {kpi.unit}
-            </span>
-          </KpiValueRow>
-          <KpiDelta>
-            <KpiDeltaUp>
-              <Icon iconName={IconName.CARET_UP_FILL} width={14} height={14} />
-              {kpi.delta}%
-            </KpiDeltaUp>
-            <KpiDeltaLabel>vs prev mo</KpiDeltaLabel>
-          </KpiDelta>
-        </KpiValueBlock>
-        <MiniDotGrid fill1={fill1} fill2={fill2} well={well} />
-      </KpiCardBottom>
-    </KpiSummaryCard>
-  );
-}
-
-// winner gets 10 dots; loser loses 1 dot per 5% gap (amplified so small diffs still read)
-const KPI_FILLS: [number, number][] = KPI_SUMMARY.map((kpiA, i) => {
-  const a = kpiA.value;
-  const b = KPI_SUMMARY_B[i].value;
-  const pctDiff = (Math.abs(a - b) / Math.max(a, b)) * 100;
-  const lower = Math.max(1, 10 - Math.ceil(pctDiff / 5));
-  return a >= b ? [10, lower] : [lower, 10];
-});
 
 function KpiSummarySection() {
   return (
@@ -1672,14 +1465,32 @@ function KpiSummarySection() {
       <KpiInfoCard>
         <KpiSummaryGrid>
           {KPI_SUMMARY.map((kpi, i) => (
-            <KpiCard key={kpi.label} kpi={kpi} well="a" fill1={KPI_FILLS[i][0]} fill2={KPI_FILLS[i][1]} />
+            <KpiCard
+              key={kpi.label}
+              icon={kpi.icon}
+              label={kpi.label}
+              value={kpi.value}
+              unit={kpi.unit}
+              delta={kpi.delta}
+              compare={KPI_SUMMARY_B[i].value}
+              range={KPI_RANGES[kpi.label]}
+            />
           ))}
         </KpiSummaryGrid>
       </KpiInfoCard>
       <KpiInfoCard>
         <KpiSummaryGrid>
           {KPI_SUMMARY_B.map((kpi, i) => (
-            <KpiCard key={`b-${kpi.label}`} kpi={kpi} well="b" fill1={KPI_FILLS[i][0]} fill2={KPI_FILLS[i][1]} />
+            <KpiCard
+              key={`b-${kpi.label}`}
+              icon={kpi.icon}
+              label={kpi.label}
+              value={kpi.value}
+              unit={kpi.unit}
+              delta={kpi.delta}
+              compare={KPI_SUMMARY[i].value}
+              range={KPI_RANGES[kpi.label]}
+            />
           ))}
         </KpiSummaryGrid>
       </KpiInfoCard>
@@ -1804,27 +1615,14 @@ function SampleColumn({ seedOffset, count = 10 }: { seedOffset: number; count?: 
           {depths.map((d, i) => {
             const meta = SAMPLE_META[i % SAMPLE_META.length];
             return (
-              <Tile key={d}>
-                <TileImgWrap>
-                  <TileImg src={SAMPLE_IMAGES[(seedOffset + i) % 12] as unknown as string} alt="" />
-                </TileImgWrap>
-                <TileBody>
-                  <TileTitleGroup>
-                    <TileDepthRow>
-                      <TileDepthValue>{fmt(d)} ft</TileDepthValue>
-                    </TileDepthRow>
-                    <TileIdRow>
-                      <Icon iconName={IconName.UPC} width={20} height={20} />
-                      <TileIdLabel>{meta.id.replace('#', '')}</TileIdLabel>
-                    </TileIdRow>
-                  </TileTitleGroup>
-                  <TileDateRow>
-                    <TileSmall>{meta.date}</TileSmall>
-                    <TileSmall>/</TileSmall>
-                    <TileSmall>#{meta.count}</TileSmall>
-                  </TileDateRow>
-                </TileBody>
-              </Tile>
+              <SampleCard
+                key={d}
+                image={SAMPLE_IMAGES[(seedOffset + i) % 12] as unknown as string}
+                depth={d}
+                id={meta.id.replace('#', '')}
+                date={meta.date}
+                count={meta.count}
+              />
             );
           })}
         </TileGrid>
@@ -1834,165 +1632,6 @@ function SampleColumn({ seedOffset, count = 10 }: { seedOffset: number; count?: 
 }
 
 /* ============================== view ============================== */
-
-const AiFabWrap = styled.div`
-  position: fixed;
-  bottom: ${spacing.md};
-  right: ${spacing.md};
-  z-index: 200;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  border-radius: ${radii.lg};
-  transition: filter 0.2s ease;
-  &:hover {
-    filter: drop-shadow(0 8px 32px rgba(0, 0, 0, 0.48));
-  }
-`;
-
-const AiPanel = styled.div<{ $open: boolean }>`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: ${space['6px']};
-  width: ${space['320px']};
-  max-height: ${p => p.$open ? space['384px'] : '0'};
-  overflow: hidden;
-  opacity: ${p => p.$open ? 1 : 0};
-  pointer-events: ${p => p.$open ? 'all' : 'none'};
-  transition: max-height 0.25s ease, opacity 0.2s ease;
-`;
-
-const AiChip = styled.button`
-  display: flex;
-  align-items: center;
-  height: ${sizes.sm};
-  padding: 0 ${spacing.xs};
-  background: ${t.surface};
-  border: 1px solid ${t.border};
-  border-radius: ${radii.md};
-  font-family: ${fontFamilies.body};
-  font-size: ${fontSizes.s};
-  font-weight: ${fontWeights.regular};
-  color: ${t.ink2};
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: ${shadows.xl};
-  transition: border-color 0.15s ease, color 0.15s ease;
-  &:hover { border-color: ${t.teal}; color: ${t.ink}; }
-`;
-
-const beamSpin = keyframes`
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-`;
-
-const AiInputBorder = styled.div`
-  position: relative;
-  align-self: stretch;
-  border-radius: ${radii.md};
-  box-shadow: ${shadows.xl};
-  margin-top: ${spacing.xs};
-`;
-
-const AiAnimRing = styled.div`
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  border-radius: ${radii.md};
-  padding: 1px;
-  overflow: hidden;
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -150%;
-    background: conic-gradient(
-      from 0deg,
-      transparent 0deg,
-      ${t.teal} 50deg,
-      transparent 90deg,
-      transparent 360deg
-    );
-    animation: ${beamSpin} 6s linear infinite;
-  }
-  &::after {
-    content: '';
-    position: absolute;
-    inset: -150%;
-    background: conic-gradient(
-      from 0deg,
-      transparent 0deg,
-      ${d.transparent.white['72%']} 50deg,
-      transparent 90deg,
-      transparent 360deg
-    );
-    animation: ${beamSpin} 6s linear infinite;
-    animation-delay: -3s;
-  }
-`;
-
-const AiInputRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${space['4px']};
-  padding: ${space['4px']};
-  background: ${t.surface};
-  border: 1px solid ${t.borderWeaker};
-  border-radius: ${radii.md};
-`;
-
-const AiIconBtn = styled.button`
-  flex: none;
-  width: ${sizes.md};
-  height: ${sizes.md};
-  padding: 0;
-  border: none;
-  background: transparent;
-  border-radius: ${radii.sm};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  svg path { fill: ${t.ink3}; }
-  &:hover { background: ${t.panelTint}; svg path { fill: ${t.ink2}; } }
-`;
-
-const AiInputEl = styled.input`
-  flex: 1;
-  min-width: 0;
-  background: transparent;
-  border: none;
-  outline: none;
-  font-family: ${fontFamilies.body};
-  font-size: ${fontSizes.s};
-  color: ${t.ink};
-  &::placeholder { color: ${t.ink4}; }
-`;
-
-const AiSendBtn = styled.button`
-  flex: none;
-  width: ${sizes.md};
-  height: ${sizes.md};
-  padding: 0;
-  border: none;
-  border-radius: ${radii.sm};
-  background: linear-gradient(135deg, ${t.teal} 0%, ${t.tealHi} 100%);
-  opacity: 0.4;
-  cursor: not-allowed;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  svg path { fill: ${t.textOnBrand}; }
-`;
 
 
 /* ========================= floating add panel ========================== */
@@ -2144,23 +1783,6 @@ function DraggableSection({ index, isSrc, isTarget, isPending, srcHeight, onDrag
   );
 }
 
-function AiGradientIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="ai-fab-icon-grad" x1="0" y1="0" x2="16" y2="16" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor={d.neutral.text.static} />
-          <stop offset="100%" stopColor={t.teal} />
-        </linearGradient>
-      </defs>
-      <path
-        fill="url(#ai-fab-icon-grad)"
-        d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.73 1.73 0 0 0 4.593 5.69l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.69A1.73 1.73 0 0 0 2.31 4.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.73 1.73 0 0 0 3.407 2.31zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732L9.1 2.137a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z"
-      />
-    </svg>
-  );
-}
-
 export default function WellComparison() {
   const [pageScrolled, setPageScrolled] = useState(false);
   useEffect(() => {
@@ -2174,12 +1796,6 @@ export default function WellComparison() {
   const [showcaseMode, setShowcaseMode] = useState(false);
   const [wellSelectorOpen, setWellSelectorOpen] = useState(false);
   const [selectedWell, setSelectedWell] = useState(WELL_B);
-  const [aiFabOpen, setAiFabOpen] = useState(false);
-  const [aiMessage, setAiMessage] = useState('');
-  const aiInputRef = useRef<HTMLInputElement>(null);
-  useLayoutEffect(() => {
-    if (aiFabOpen) aiInputRef.current?.focus();
-  }, [aiFabOpen]);
 
   const [depthRange, setDepthRange] = useState(DEPTH_RANGE_OPTIONS[0]);
   const [timeWindow, setTimeWindow] = useState(TIME_WINDOW_OPTIONS[0]);
@@ -2228,6 +1844,9 @@ export default function WellComparison() {
     });
     dragSrcRef.current = null;
   }
+  const hideSection = (id: SectionId) =>
+    setHiddenSections(prev => new Set([...Array.from(prev), id]));
+
   function restoreSection(id: SectionId) {
     const nextHidden = new Set(hiddenSections);
     nextHidden.delete(id);
@@ -2417,6 +2036,9 @@ export default function WellComparison() {
             <SelectorWrap>
               <Selector onClick={() => setWellSelectorOpen(o => !o)}>
                 <span className="label">{selectedWell}</span>
+                {selectedWell === WELL_B && (
+                  <AiBadge>Best match</AiBadge>
+                )}
                 <span className="divider" />
                 <Icon iconName={IconName.CHEVRON_DOWN} width={16} height={16} />
               </Selector>
@@ -2477,7 +2099,7 @@ export default function WellComparison() {
                       rightIcon={<Icon iconName={IconName.CHECK_SIMPLE} width={16} height={16} />}
                       onClick={() => {
                         setPendingSections(prev => { const n = new Set(prev); n.delete(id); return n; });
-                        setHiddenSections(prev => new Set([...Array.from(prev), id]));
+                        hideSection(id);
                       }}
                     />
                   </SectionFlowBtnWrap>
@@ -2497,7 +2119,7 @@ export default function WellComparison() {
             };
             const SECTION_CONTENT: Record<SectionId, JSX.Element> = {
               summary: (
-                <AccordionSection title={SECTION_META.summary.title} dimContent={toHideSections.has('summary') || hiddenSections.has('summary')} actions={addFlowActive ? getFlowAction('summary') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'summary' as SectionId]))} />}>
+                <AccordionSection title={SECTION_META.summary.title} dimContent={toHideSections.has('summary') || hiddenSections.has('summary')} actions={addFlowActive ? getFlowAction('summary') : <SectionMenu onRemove={() => hideSection('summary')} />}>
                   <CardRow>
                     {SUMMARY.map((card) => (
                       <AICard key={card.title}>
@@ -2528,7 +2150,7 @@ export default function WellComparison() {
                 </AccordionSection>
               ),
               general: (
-                <AccordionSection title={SECTION_META.general.title} dimContent={toHideSections.has('general') || hiddenSections.has('general')} actions={addFlowActive ? getFlowAction('general') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'general' as SectionId]))} />}>
+                <AccordionSection title={SECTION_META.general.title} dimContent={toHideSections.has('general') || hiddenSections.has('general')} actions={addFlowActive ? getFlowAction('general') : <SectionMenu onRemove={() => hideSection('general')} />}>
                   <Pair>
                     <InfoColumn rows={GENERAL_A} />
                     <InfoColumn rows={GENERAL_B} />
@@ -2536,10 +2158,10 @@ export default function WellComparison() {
                 </AccordionSection>
               ),
               offset: (
-                <AccordionSection title={SECTION_META.offset.title} dimContent={toHideSections.has('offset') || hiddenSections.has('offset')} actions={addFlowActive ? getFlowAction('offset') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'offset' as SectionId]))} />}>
+                <AccordionSection title={SECTION_META.offset.title} dimContent={toHideSections.has('offset') || hiddenSections.has('offset')} actions={addFlowActive ? getFlowAction('offset') : <SectionMenu onRemove={() => hideSection('offset')} />}>
                   <Pair>
-                    <OffsetColumn />
-                    <OffsetColumn />
+                    <OffsetColumn pad={OFFSET_PAD_A} stages={OFFSET_STAGES_A} />
+                    <OffsetColumn pad={OFFSET_PAD_B} stages={OFFSET_STAGES_B} />
                   </Pair>
                 </AccordionSection>
               ),
@@ -2564,18 +2186,18 @@ export default function WellComparison() {
                         title="Time window"
                         size="md"
                       />
-                      <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'trends' as SectionId]))} />
+                      <SectionMenu onRemove={() => hideSection('trends')} />
                     </div>
                   )}
                 >
                   <Pair>
-                    <HccPanelRows rows={HCC_ROWS} />
-                    <HccPanelRows rows={HCC_ROWS} />
+                    <HccPanelRows rows={HCC_ROWS_A} />
+                    <HccPanelRows rows={HCC_ROWS_B} />
                   </Pair>
                 </AccordionSection>
               ),
               kpi: (
-                <AccordionSection title={SECTION_META.kpi.title} dimContent={toHideSections.has('kpi') || hiddenSections.has('kpi')} actions={addFlowActive ? getFlowAction('kpi') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'kpi' as SectionId]))} />}>
+                <AccordionSection title={SECTION_META.kpi.title} dimContent={toHideSections.has('kpi') || hiddenSections.has('kpi')} actions={addFlowActive ? getFlowAction('kpi') : <SectionMenu onRemove={() => hideSection('kpi')} />}>
                   <KpiSummarySection />
                 </AccordionSection>
               ),
@@ -2583,7 +2205,7 @@ export default function WellComparison() {
                 <CorrelationChart
                   flowAction={addFlowActive ? getFlowAction('correlation') : undefined}
                   dimContent={toHideSections.has('correlation') || hiddenSections.has('correlation')}
-                  onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'correlation' as SectionId]))}
+                  onRemove={() => hideSection('correlation')}
                 />
               ),
               samples: (
@@ -2618,7 +2240,7 @@ export default function WellComparison() {
                         variant="pills"
                         size="sm"
                       />
-                      <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'samples' as SectionId]))} />
+                      <SectionMenu onRemove={() => hideSection('samples')} />
                     </div>
                   )}
                 >
@@ -2636,7 +2258,7 @@ export default function WellComparison() {
                 <AccordionSection
                   title={SECTION_META.ar.title}
                   dimContent={toHideSections.has('ar') || hiddenSections.has('ar')}
-                  actions={addFlowActive ? getFlowAction('ar') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'ar' as SectionId]))} />}
+                  actions={addFlowActive ? getFlowAction('ar') : <SectionMenu onRemove={() => hideSection('ar')} />}
                 >
                   <Panel>
                     <ChartWrap>
@@ -2696,41 +2318,9 @@ export default function WellComparison() {
         </Footer>
       </Shell>
 
-      <AiFabWrap
-        onMouseEnter={() => setAiFabOpen(true)}
-        onMouseLeave={() => setAiFabOpen(false)}
-      >
-        <AiPanel $open={aiFabOpen}>
-          {['Summarize well differences', 'Compare ROP patterns', 'Identify formation anomalies'].map((s) => (
-            <AiChip key={s}>{s}</AiChip>
-          ))}
-          <AiInputBorder>
-            <AiAnimRing />
-            <AiInputRow>
-              <AiIconBtn aria-label="Add">
-                <Icon iconName={IconName.PLUS_LG} width={16} height={16} />
-              </AiIconBtn>
-              <AiInputEl
-                ref={aiInputRef}
-                placeholder="Ask anything"
-                value={aiMessage}
-                onChange={e => setAiMessage(e.target.value)}
-              />
-              <AiIconBtn aria-label="Voice">
-                <Icon iconName={IconName.MIC} width={16} height={16} />
-              </AiIconBtn>
-              <AiSendBtn disabled aria-label="Send">
-                <Icon iconName={IconName.SEND_FILL} width={16} height={16} />
-              </AiSendBtn>
-            </AiInputRow>
-          </AiInputBorder>
-        </AiPanel>
-        <AiFab $open={aiFabOpen} aria-label="AI assistant">
-          <AiFabMiddle $open={aiFabOpen}>
-            <AiGradientIcon />
-          </AiFabMiddle>
-        </AiFab>
-      </AiFabWrap>
+      <AiChat
+        prompts={['Summarize well differences', 'Compare ROP patterns', 'Identify formation anomalies']}
+      />
 
       <FloatingAddBar $visible={addFlowActive}>
         <Button

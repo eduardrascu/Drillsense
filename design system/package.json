@@ -11,6 +11,7 @@
     "preview:build": "vite build"
   },
   "dependencies": {
+    "@tanstack/react-table": "^8.21.3",
     "@types/d3": "^7.4.3",
     "@visx/axis": "^3.12.0",
     "@visx/curve": "^3.12.0",

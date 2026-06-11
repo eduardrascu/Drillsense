@@ -1,5 +1,5 @@
 import { useState, useRef, useLayoutEffect, useEffect, type JSX } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 import {
   darkTheme,
   spacing,
@@ -44,12 +44,20 @@ import { LineChartDS } from '@src/components/LineChart';
 import { HBarChartDS } from '@src/components/HorizontalBarChart';
 import { LegendContainer, LegendItem } from '@src/components/Legend/styles';
 import SortDropdown from '@src/components/Sort';
+import { DataTable } from '@src/components/DataTable';
+import type { EnhancedColumnDef } from '@src/components/DataTable/types';
+import { KpiCard, KpiDetailItem, type KpiRange } from '@/src/local components/KpiCards/KpiCards';
+import { SampleCard } from '@/src/local components/SampleCard/SampleCard';
+import { AiChat, AiGradientIcon } from '@/src/local components/AiChat/AiChat';
 
 /* ------------------------------------------------------------------ *
- * Well Detail
- * Single-well detail page — breadcrumb predecessor to WellComparison.
- * All sections from WellComparison adapted for a single well: no Pair
- * wrappers, single-series charts, single KPI grid, single-well AI summary.
+ * Well Profile
+ * Single-well profile page — the breadcrumb predecessor to
+ * WellComparison. Duplicated from the comparison screen and reduced to
+ * a single well (one card per category, no second-well selector). Laid
+ * out two-column: pinned "General details" on the left third, all main
+ * sections on the right two-thirds. Every color, padding, gap and radius
+ * traces to src/themes/tokens.ts — no hardcoded values.
  * ------------------------------------------------------------------ */
 
 const d = darkTheme.colors;
@@ -285,10 +293,103 @@ const SectionMenuDangerItem = styled(DropdownMenuItem)`
 /* ---------------------------- content ----------------------------- */
 
 const Main = styled.main`
+  display: block;
+  padding: ${spacing.xl};
+`;
+
+/* ---- two-column body: pinned general details left, sections right ---- */
+
+const BodyGrid = styled.div`
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
+  gap: ${spacing.xl};
+  align-items: start;
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+`;
+
+const SideCol = styled.aside`
+  order: 2;
+  position: sticky;
+  top: calc(${space['80px']} + ${spacing.xl});
+  align-self: start;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: ${spacing.md};
+  /* only cap at the viewport (32px gap above the bottom) when the three cards
+     would exceed it; otherwise they keep natural height. The first two stay
+     their natural size and the last card absorbs any overflow (scrolls inside),
+     so the right block itself never scrolls. */
+  max-height: calc(100vh - ${space['80px']} - ${spacing.xl} - ${spacing.xl});
+  & > *:not(:last-child) {
+    flex: none;
+  }
+  @media (max-width: 1100px) {
+    position: static;
+    max-height: none;
+  }
+`;
+
+const RightCol = styled.div`
+  order: 1;
   display: flex;
   flex-direction: column;
   gap: ${spacing.xl};
-  padding: 0 ${spacing.xl} ${spacing.xl};
+  min-width: 0;
+`;
+
+const SideCard = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${spacing.md};
+  padding: ${spacing.md};
+  background: ${t.panelTint};
+  border: 1px solid ${d.neutral.border.weaker};
+  border-radius: ${radii.md};
+`;
+
+const DetailGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: ${spacing.md};
+`;
+
+/* makes the table's first column fluidly absorb the remaining width
+   (auto table-layout: the width:100% column takes whatever the other,
+   fixed-width columns leave) — so it stays correct on resize */
+const TableFill = styled.div`
+  /* first column fills the remaining width; max-width:0 keeps auto-layout from
+     expanding it to its content, so the inner text can ellipsis instead of
+     forcing the column (and the actions column) wider */
+  & th:first-child,
+  & td:first-child {
+    width: 100%;
+    max-width: 0;
+  }
+  & td:first-child > * {
+    display: block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  /* the DataTable's wrapper forces min-width: max-content, which on a narrow
+     container overflows horizontally and scrolls the actions (3-dots) column
+     off-screen. Let it shrink to the container so the actions stay visible. */
+  & > div > div {
+    min-width: 0;
+  }
+  /* reveal the row actions (3-dots) only on hover; keep visible while its
+     menu is open (focus-within). opacity keeps the column width reserved. */
+  & tbody td:last-child button {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+  & tbody tr:hover td:last-child button,
+  & tbody td:last-child:focus-within button {
+    opacity: 1;
+  }
 `;
 
 const Panel = styled.section`
@@ -323,16 +424,15 @@ const CardBodyWrap = styled.div`
   }
 `;
 const CardRow = styled.div`
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: ${space['12px']};
   align-items: stretch;
-  flex-wrap: wrap;
 `;
 const AICard = styled.div`
   position: relative;
   overflow: hidden;
-  flex: 1 0 0;
-  min-width: ${space['224px']};
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: ${space['16px']};
@@ -389,52 +489,38 @@ const InfoCard = styled.div`
   border: 1px solid ${d.neutral.border.weaker};
   border-radius: ${radii.md};
 `;
-const InfoGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: ${spacing.md};
-  @media (min-width: 1800px) {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
-  .k {
-    color: ${t.ink4};
-  }
-  .v {
-    color: ${t.ink};
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .cell {
-    display: flex;
-    flex-direction: column;
-    gap: ${space['4px']};
-  }
-`;
 
 /* --------------------------- offset well (tree) -------------------------- */
 
 const WELL_CARD_H = 52; // px — must match rendered card height for SVG alignment
 const WELL_CARD_GAP = 8; // px
 
+const OffsetCard = styled(InfoCard)`
+  position: relative;
+`;
+const OffsetKpiRow = styled.div`
+  position: absolute;
+  left: ${spacing.md};
+  bottom: ${spacing.md};
+  display: flex;
+  gap: ${spacing.md};
+`;
 const OffsetTreeWrap = styled.div`
   display: flex;
   align-items: stretch;
 `;
 const OffsetPadCol = styled.div`
   flex: none;
-  width: auto;
-  align-self: center;
+  align-self: flex-start;
 `;
 const OffsetPadChip = styled.button`
   display: inline-flex;
   flex-direction: column;
   gap: ${space['4px']};
   padding: ${spacing['2xs']};
-  width: ${space['240px']};
-  border: 1px solid ${t.borderStrong};
-  border-radius: ${radii.md};
-  background: transparent;
+  border: none;
+  border-radius: ${radii.sm};
+  background: ${t.canvas};
   cursor: default;
   text-align: left;
   svg path { fill: ${t.teal}; }
@@ -449,33 +535,15 @@ const PadChipTitle = styled.div`
   font-weight: ${fontWeights.semibold};
   white-space: nowrap;
 `;
-const PadChipKpiRow = styled.div`
-  display: flex;
-  flex-direction: column;
-  background: ${t.canvas};
-  border-radius: ${radii.sm};
-  overflow: hidden;
-`;
-const PadChipKpiItem = styled.div`
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${spacing.md};
-  padding: ${spacing.xs};
-  white-space: nowrap;
-  & + & {
-    border-top: 1px solid ${t.border};
-  }
-`;
 const OffsetConnectorWrap = styled.div`
   flex: 1;
   min-width: 0;
   align-self: stretch;
 `;
 const OffsetWellsCol = styled.div`
-  flex: none;
-  width: 360px;
+  flex: 1 1 0;
+  min-width: 320px;
+  max-width: 480px;
   display: flex;
   flex-direction: column;
   gap: ${spacing.xs};
@@ -483,7 +551,6 @@ const OffsetWellsCol = styled.div`
 const OffsetWellCard = styled.div<{ $v: StageVariant }>`
   padding: ${spacing.sm};
   border-radius: ${radii.sm};
-  border: 1px solid ${d.neutral.border.weaker};
   background: ${t.canvas};
   opacity: 1;
 `;
@@ -548,7 +615,7 @@ const HccPanelCard = styled(InfoCard)`
 const HccRow = styled.div`
   display: flex;
   align-items: center;
-  gap: ${spacing.xs};
+  gap: ${space['12px']};
   min-height: 72px;
   padding: ${spacing.xs} ${spacing.sm};
   & + & {
@@ -566,17 +633,23 @@ const HccChartCell = styled.div`
 `;
 
 const HccDescCell = styled.div`
-  flex: 1 1 0;
+  flex: 2 1 0;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: ${space['4px']};
   padding: ${spacing.xs} ${spacing.xs} ${spacing.xs} 0;
+  /* truncate copy on one line once it exceeds the available width */
+  & > * {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
 `;
 
 const HccMetaCell = styled.div`
-  flex: none;
-  width: ${space['160px']};
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: ${space['2px']};
@@ -590,87 +663,33 @@ const KpiSummaryGrid = styled.div`
   grid-template-columns: repeat(2, 1fr);
   gap: 0;
   padding: 0;
-  @media (min-width: 1800px) {
+  @media (min-width: 1440px) {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* dividers drawn on the cards (each child is an imported KpiCard root) */
+  & > * {
+    border-right: 1px solid ${d.neutral.border.weaker};
+    border-bottom: 1px solid ${d.neutral.border.weaker};
+  }
+
+  /* 2-column rules (default) */
+  & > *:nth-child(2n)                          { border-right: none; }
+  & > *:last-child                             { border-right: 1px solid ${d.neutral.border.weaker}; border-bottom: none; }
+  & > *:nth-last-child(-n+2):nth-child(2n+1)   { border-bottom: none; }
+
+  /* 3-column rules */
+  @media (min-width: 1440px) {
+    & > *:nth-child(2n)                        { border-right: 1px solid ${d.neutral.border.weaker}; }
+    & > *:nth-child(3n)                        { border-right: none; }
+    & > *:nth-last-child(-n+2)                 { border-bottom: none; }
+    & > *:last-child                           { border-bottom: none; }
   }
 `;
 
 const KpiInfoCard = styled(InfoCard)`
   padding: 0;
   overflow: hidden;
-`;
-const KpiSummaryCard = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: ${spacing.lg};
-  padding: ${spacing.md};
-  background: transparent;
-  border-right: 1px solid ${d.neutral.border.weaker};
-  border-bottom: 1px solid ${d.neutral.border.weaker};
-
-  /* 2-column rules (default) */
-  &:nth-child(2n)                            { border-right: none; }
-  &:last-child                               { border-right: 1px solid ${d.neutral.border.weaker}; border-bottom: none; }
-  &:nth-last-child(-n+2):nth-child(2n+1)    { border-bottom: none; }
-
-  /* 3-column rules */
-  @media (min-width: 1800px) {
-    &:nth-child(2n)                          { border-right: 1px solid ${d.neutral.border.weaker}; }
-    &:nth-child(3n)                          { border-right: none; }
-    &:nth-last-child(-n+2)                   { border-bottom: none; }
-    &:last-child                             { border-bottom: none; }
-  }
-`;
-const KpiSummaryTop = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-`;
-const KpiSummaryLabelRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${spacing.xs};
-`;
-const KpiValueBlock = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${space['4px']};
-`;
-const KpiValueRow = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: ${space['6px']};
-`;
-const KpiValueNum = styled.span`
-  font-size: ${fontSizes['2xl']};
-  font-weight: ${fontWeights.regular};
-  color: ${t.ink};
-  font-variant-numeric: tabular-nums;
-  line-height: ${lineHeights['2xl']};
-`;
-const KpiCardBottom = styled.div`
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: ${spacing.sm};
-`;
-
-const KpiDelta = styled.span`
-  display: flex;
-  align-items: center;
-  gap: ${space['4px']};
-  font-size: ${fontSizes.xs};
-`;
-const KpiDeltaUp = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${space['4px']};
-  color: ${t.stateStable};
-  svg path { fill: ${t.stateStable}; }
-`;
-const KpiDeltaLabel = styled.span`
-  color: ${t.ink3};
 `;
 
 /* ------------------------- samples by depth ----------------------- */
@@ -716,86 +735,9 @@ const TileGrid = styled.div`
   grid-template-columns: repeat(3, 1fr);
   gap: ${space['16px']};
   padding: ${space['16px']};
-`;
-const Tile = styled.div`
-  display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  gap: ${space['12px']};
-  border-radius: ${radii.sm};
-  height: 100%;
-  cursor: pointer;
-  &:hover > *:first-child {
-    border-color: ${t.tealHi};
+  @media (min-width: 1440px) {
+    grid-template-columns: repeat(4, 1fr);
   }
-  &:hover img {
-    transform: scale(1.09);
-  }
-`;
-const TileImgWrap = styled.div`
-  flex: none;
-  width: ${space['96px']};
-  align-self: stretch;
-  border-radius: ${radii.sm};
-  border: 1px solid transparent;
-  overflow: hidden;
-  transition: border-color 0.15s ease;
-`;
-const TileImg = styled.img`
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  transition: transform 0.2s ease;
-`;
-const TileBody = styled.div`
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: ${space['8px']};
-`;
-
-const TileDepthRow = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: ${space['4px']};
-`;
-const TileDepthValue = styled.span`
-  font-family: ${fontFamilies.body};
-  font-size: ${fontSizes.m};
-  font-weight: ${fontWeights.semibold};
-  color: ${t.ink};
-  font-variant-numeric: tabular-nums;
-`;
-const TileSmall = styled.span`
-  font-family: ${fontFamilies.body};
-  font-size: ${fontSizes.xs};
-  font-weight: ${fontWeights.regular};
-  color: ${t.ink4};
-`;
-const TileTitleGroup = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${space['4px']};
-`;
-const TileDateRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${space['6px']};
-  svg path { fill: ${t.ink4}; }
-`;
-const TileIdRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${space['4px']};
-  svg path { fill: ${t.ink2}; }
-`;
-const TileIdLabel = styled.span`
-  font-family: ${fontFamilies.body};
-  font-size: ${fontSizes.s};
-  font-weight: ${fontWeights.regular};
-  color: ${t.ink2};
 `;
 
 
@@ -817,44 +759,6 @@ const FooterLink = styled.a`
   &:active { color: ${darkTheme.colors.components.link.text.active}; }
 `;
 
-const AiFab = styled.button<{ $open?: boolean }>`
-  width: ${space['48px']};
-  height: ${space['48px']};
-  border-radius: ${radii.xl} ${radii.xl} ${radii.sm} ${radii.xl};
-  border: none;
-  background: linear-gradient(135deg, ${d.neutral.background.baseInverted} 0%, ${t.teal} 55%, ${t.canvas} 100%);
-  padding: ${space['4px']};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  box-shadow: 0 -10px 28px 0 ${t.tealSoftHi}, 0 4px 16px 0 rgba(0, 0, 0, 0.36);
-  height: ${p => p.$open ? '0' : space['48px']};
-  overflow: hidden;
-  opacity: ${p => p.$open ? 0 : 1};
-  pointer-events: ${p => p.$open ? 'none' : 'all'};
-  transition: opacity 0.15s ease, height 0.2s ease, box-shadow 0.18s ease-in-out;
-  &:hover {
-    box-shadow: 0 -14px 36px 0 ${t.tealSoftHi}, 0 6px 20px 0 rgba(0, 0, 0, 0.44);
-  }
-`;
-
-const AiFabMiddle = styled.span<{ $open?: boolean }>`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  background: ${t.canvas};
-  border: 1.5px solid ${p => p.$open ? t.canvas : d.neutral.background.transparent.backdrop};
-  position: relative;
-  overflow: hidden;
-  transition: border-color 0.15s ease;
-  > svg { position: relative; z-index: 1; }
-`;
-
-
 /* ============================== data ============================== */
 
 const WELL_A = 'Beartooth 54-1-34 unit 23H';
@@ -869,7 +773,7 @@ const SUMMARY: AICardData[] = [
     active: true,
     body: (
       <>
-        <b>Beartooth 54-1-34</b> maintains consistently strong ROP across 2,000–8,000 ft, peaking in the Redfork formation interval.
+        Consistently strong ROP across <b>2,000–8,000 ft</b>, peaking through the Redfork interval.
       </>
     ),
   },
@@ -878,7 +782,7 @@ const SUMMARY: AICardData[] = [
     title: 'XRF ratios',
     body: (
       <>
-        Elevated Zn/Mn and reduced K/Ti ratios are consistent with the target lithology in <b>BEARTOOTH 54-1-34 UNIT 23H</b>.
+        Elevated <b>Zn/Mn</b> with reduced K/Ti ratios, consistent with the target Redfork lithology.
       </>
     ),
   },
@@ -887,7 +791,7 @@ const SUMMARY: AICardData[] = [
     title: 'Bit wear indices',
     body: (
       <>
-        Bit wear is within expected range for the Redfork; no abnormal wear detected below 7,000 ft.
+        Bit wear remains within the expected range; <b>no abnormal wear</b> detected below 7,000 ft.
       </>
     ),
   },
@@ -896,7 +800,7 @@ const SUMMARY: AICardData[] = [
     title: 'RPM vs VS correlation',
     body: (
       <>
-        <b>BEARTOOTH 54-1-34 UNIT 23H</b> shows a strong positive RPM-to-vertical-section correlation across all analyzed depths.
+        Strong positive correlation between <b>RPM and vertical section</b> across all analyzed depths.
       </>
     ),
   },
@@ -905,20 +809,24 @@ const SUMMARY: AICardData[] = [
     title: 'String weight variability',
     body: (
       <>
-        Moderate string weight fluctuations beyond 7,000 ft align with the expected lateral transition zone behavior.
+        Moderate string-weight fluctuations beyond <b>7,000 ft</b>, aligned with the lateral transition zone.
       </>
     ),
   },
 ];
 
-type InfoRow = { k: string; v: string };
+type InfoRow = { k: string; v: string; emphasis?: boolean };
 const GENERAL_A: InfoRow[] = [
-  { k: 'Benchmark ID', v: '281' },
   { k: 'Operator', v: 'Arnold Oil Properties' },
+  { k: 'Benchmark ID', v: '281' },
   { k: 'API number', v: '35-039-00004' },
   { k: 'Target formation', v: 'Redfork' },
+  { k: 'Formation depth', v: `${fmt(9350)} ft` },
+  { k: 'Current stage', v: 'Curve' },
   { k: 'Location', v: '35.5799400, -98.8795200' },
   { k: 'County/state', v: 'Custer, OK' },
+  { k: 'Status', v: 'Active', emphasis: true },
+  { k: 'Created at', v: 'Dec 08, 2025' },
 ];
 
 type StageVariant = 'active' | 'completed' | 'drilling' | 'planned';
@@ -943,12 +851,25 @@ const KPI_SUMMARY: KpiSummary[] = [
   { label: 'MSE', unit: 'ksi', value: 312.56, delta: 5.4, icon: IconName.LIGHTNING },
 ];
 
+// chart range (track extent) + suggested normal/working band (success region) per metric
+const KPI_RANGES: Record<string, KpiRange> = {
+  'ROP':        { max: 250,   bandLow: 20,   bandHigh: 150 },
+  'WOB':        { max: 80,    bandLow: 10,   bandHigh: 50 },
+  'RPM':        { max: 350,   bandLow: 60,   bandHigh: 280 },
+  'String Wt':  { max: 1000,  bandLow: 100,  bandHigh: 700 },
+  'SPP':        { max: 10000, bandLow: 2000, bandHigh: 7500 },
+  'Diff Press': { max: 1500,  bandLow: 200,  bandHigh: 1000 },
+  'Torque':     { max: 80,    bandLow: 5,    bandHigh: 50 },
+  'Flow Rate':  { max: 1200,  bandLow: 300,  bandHigh: 900 },
+  'MSE':        { max: 500,   bandLow: 20,   bandHigh: 250 },
+};
+
 // ---- correlation chart data (deterministic, generated once) ----
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const N = 500;
 const DEPTHS = Array.from({ length: N }, (_, i) => (i * 10000) / (N - 1));
 
-// Well A: starts high, drops through a hard formation mid-section, recovers late
+// starts high, drops through a hard formation mid-section, recovers late
 const SERIES_A = DEPTHS.map((_, i) => {
   const tn = i / (N - 1) * 10000 / 10000;
   const trend = 3.4 - tn * 1.2 + Math.pow(tn - 0.55, 2) * 2.8 - Math.pow(tn - 0.8, 2) * 1.4;
@@ -1059,15 +980,14 @@ const STATE_COLORS: Record<string, string> = {
   event:  d.dataViz.qualitative_2_1[1],
 };
 const VERTICAL_SECTION_ROWS = [
-  { label: WELL_A, bands: toDepthBands(BAND_A) },
+  { label: '', name: WELL_A, bands: toDepthBands(BAND_A) },
 ];
 
-const SECTION_IDS = ['summary', 'general', 'offset', 'trends', 'kpi', 'correlation', 'samples', 'ar'] as const;
+const SECTION_IDS = ['summary', 'offset', 'trends', 'kpi', 'correlation', 'samples', 'ar'] as const;
 type SectionId = typeof SECTION_IDS[number];
 
 const SECTION_META: Record<SectionId, { title: string; desc: string }> = {
   summary:     { title: 'Well summary',          desc: 'AI-generated well highlights' },
-  general:     { title: 'General details',        desc: 'Well metadata and operator info' },
   offset:      { title: 'Offset well',            desc: 'Pad order and well stages' },
   trends:      { title: 'Trends',                 desc: 'High confidence correlations' },
   kpi:         { title: 'KPI summary',            desc: 'Rate of penetration, WOB, RPM and more' },
@@ -1283,38 +1203,141 @@ function AccordionSection({
   );
 }
 
-function InfoColumn({ rows }: { rows: InfoRow[] }) {
+function GeneralSidebar() {
   return (
-    <InfoCard>
-      <InfoGrid>
-        {rows.map((r) => (
-          <div className="cell" key={r.k}>
-            <Typography type="body" size="md" color="weaker">
-              <span className="k">{r.k}</span>
-            </Typography>
-            <Typography type="body" size="md" as="div">
-              <span className="v">{r.v}</span>
-            </Typography>
-          </div>
+    <SideCard>
+      <Typography type="body" size="lg" weight="semibold">Project details</Typography>
+      <DetailGrid>
+        {GENERAL_A.map((r) => (
+          <KpiDetailItem key={r.k} label={r.k} value={r.v} emphasis={r.emphasis} />
         ))}
-        <div className="cell">
-          <Typography type="body" size="md" color="weaker">
-            <span className="k">Status</span>
-          </Typography>
-          <Typography type="body" size="md" variant="primary">
-            Active
-          </Typography>
-        </div>
-        <div className="cell">
-          <Typography type="body" size="md" color="weaker">
-            <span className="k">Created at</span>
-          </Typography>
-          <Typography type="body" size="md" as="div">
-            <span className="v">12/08/2025 - 16:49</span>
-          </Typography>
-        </div>
-      </InfoGrid>
-    </InfoCard>
+      </DetailGrid>
+    </SideCard>
+  );
+}
+
+/* ------------------------ related comparisons --------------------- */
+
+type RelatedRow = { well: string; date: string };
+
+const RELATED_COMPARISONS: RelatedRow[] = [
+  { well: 'Silver Peak 58-1-22 unit 18H', date: 'Dec 18, 2025' },
+  { well: 'Coyote Ridge 42-3-11 unit 7H', date: 'Dec 12, 2025' },
+  { well: 'Mesa Verde 61-2-08 unit 5H',  date: 'Dec 09, 2025' },
+  { well: 'Ironhorse 33-4-19 unit 12H',  date: 'Dec 03, 2025' },
+];
+
+const RELATED_COLUMNS: EnhancedColumnDef<RelatedRow, unknown>[] = [
+  {
+    accessorKey: 'well',
+    header: 'Well name',
+    cell: ({ row }) => (
+      <Typography type="body" size="md">{row.original.well}</Typography>
+    ),
+    minSize: 120,
+  },
+  {
+    accessorKey: 'date',
+    header: 'Date',
+    cell: ({ row }) => (
+      <Typography type="body" size="md" color="weaker">{row.original.date}</Typography>
+    ),
+    minSize: 120,
+    maxSize: 120,
+  },
+];
+
+const RELATED_ACTIONS = [
+  { label: 'View comparison', icon: IconName.BOX_ARROW_UP, onClick: () => {} },
+  { label: 'Remove', icon: IconName.TRASH, divider: true, onClick: () => {} },
+];
+
+function RelatedComparisons() {
+  return (
+    <SideCard>
+      <Typography type="body" size="lg" weight="semibold">Comparisons</Typography>
+      <TableFill>
+        <DataTable
+          columns={RELATED_COLUMNS}
+          data={RELATED_COMPARISONS}
+          size="sm"
+          actionItems={RELATED_ACTIONS}
+        />
+      </TableFill>
+    </SideCard>
+  );
+}
+
+/* ------------------------- recent analyses ------------------------ */
+
+type AnalysisRow = { date: string; depth: number };
+
+const RECENT_ANALYSES: AnalysisRow[] = [
+  { date: 'Nov 18, 2025', depth: 21518 },
+  { date: 'Nov 17, 2025', depth: 21568 },
+  { date: 'Nov 14, 2025', depth: 21618 },
+  { date: 'Nov 13, 2025', depth: 21668 },
+  { date: 'Nov 12, 2025', depth: 21718 },
+  { date: 'Nov 11, 2025', depth: 21768 },
+  { date: 'Nov 10, 2025', depth: 21818 },
+  { date: 'Nov 07, 2025', depth: 21868 },
+];
+
+const ANALYSIS_COLUMNS: EnhancedColumnDef<AnalysisRow, unknown>[] = [
+  {
+    accessorKey: 'depth',
+    header: 'Depth',
+    cell: ({ row }) => (
+      <Typography type="body" size="md">{fmt(row.original.depth)} ft</Typography>
+    ),
+    minSize: 120,
+  },
+  {
+    accessorKey: 'date',
+    header: 'Date',
+    cell: ({ row }) => (
+      <Typography type="body" size="md" color="weaker">{row.original.date}</Typography>
+    ),
+    minSize: 120,
+    maxSize: 120,
+  },
+];
+
+const ANALYSIS_ACTIONS = [
+  { label: 'View analysis', icon: IconName.BOX_ARROW_UP, onClick: () => {} },
+  { label: 'Remove', icon: IconName.TRASH, divider: true, onClick: () => {} },
+];
+
+/* the last sidebar card fills the remaining height; its table area flexes and
+   scrolls internally so the right block itself never scrolls */
+const AnalysesCard = styled(SideCard)`
+  flex: 1 1 auto;
+  min-height: 0;
+`;
+const AnalysesTableFill = styled(TableFill)`
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  & > div {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+`;
+
+function RecentAnalyses() {
+  return (
+    <AnalysesCard>
+      <Typography type="body" size="lg" weight="semibold">Analyses</Typography>
+      <AnalysesTableFill>
+        <DataTable
+          columns={ANALYSIS_COLUMNS}
+          data={RECENT_ANALYSES}
+          size="sm"
+          actionItems={ANALYSIS_ACTIONS}
+        />
+      </AnalysesTableFill>
+    </AnalysesCard>
   );
 }
 
@@ -1335,12 +1358,12 @@ function OffsetConnectorSVG({ totalH, ys, W, padY }: { totalH: number; ys: numbe
         return (
           <g key={i}>
             <path d={pd} fill="none" stroke={`url(#cg-${i})`} strokeWidth={1} />
-            <circle cx={W} cy={y} r={4} fill={t.canvas} stroke={t.borderWeak} strokeWidth={1} />
+            <circle cx={W} cy={y} r={4} fill={t.borderWeakest} stroke={t.canvas} strokeWidth={2} />
           </g>
         );
       })}
       {/* origin dot rendered once so it matches terminal dots visually */}
-      <circle cx={0} cy={padY} r={4} fill={t.canvas} stroke={t.borderWeak} strokeWidth={1} />
+      <circle cx={0} cy={padY} r={4} fill={t.borderWeakest} stroke={t.canvas} strokeWidth={2} />
     </svg>
   );
 }
@@ -1384,7 +1407,7 @@ function OffsetColumn() {
   }, []);
 
   return (
-    <InfoCard>
+    <OffsetCard>
       <OffsetTreeWrap>
         <OffsetPadCol>
           <OffsetPadChip ref={padRef}>
@@ -1392,20 +1415,6 @@ function OffsetColumn() {
               <Icon iconName={IconName.GRID_3_X_3} width={14} height={14} />
               PAD: "Wolfcamp B"
             </PadChipTitle>
-            <PadChipKpiRow>
-              <PadChipKpiItem>
-                <Typography type="body" size="md" color="weaker">Spacing</Typography>
-                <Typography type="body" size="md">325 ft</Typography>
-              </PadChipKpiItem>
-              <PadChipKpiItem>
-                <Typography type="body" size="md" color="weaker">Formation depth</Typography>
-                <Typography type="body" size="md">{fmt(9350)} ft</Typography>
-              </PadChipKpiItem>
-              <PadChipKpiItem>
-                <Typography type="body" size="md" color="weaker">Current stage</Typography>
-                <Typography type="body" size="md">Curve</Typography>
-              </PadChipKpiItem>
-            </PadChipKpiRow>
           </OffsetPadChip>
         </OffsetPadCol>
         <OffsetConnectorWrap ref={connWrapRef}>
@@ -1434,37 +1443,13 @@ function OffsetColumn() {
           ))}
         </OffsetWellsCol>
       </OffsetTreeWrap>
-    </InfoCard>
-  );
-}
 
-function SingleKpiCard({ kpi }: { kpi: KpiSummary }) {
-  return (
-    <KpiSummaryCard>
-      <KpiSummaryTop>
-        <KpiSummaryLabelRow>
-          <Icon iconName={kpi.icon as IconName} width={14} height={14} />
-          <Typography type="body" size="md" color="weaker">{kpi.label}</Typography>
-        </KpiSummaryLabelRow>
-      </KpiSummaryTop>
-      <KpiCardBottom>
-        <KpiValueBlock>
-          <KpiValueRow>
-            <KpiValueNum>{kpi.value.toLocaleString('en-US')}</KpiValueNum>
-            <span style={{ fontFamily: fontFamilies.body, fontSize: fontSizes.s, color: t.ink4 }}>
-              {kpi.unit}
-            </span>
-          </KpiValueRow>
-          <KpiDelta>
-            <KpiDeltaUp>
-              <Icon iconName={IconName.CARET_UP_FILL} width={14} height={14} />
-              {kpi.delta}%
-            </KpiDeltaUp>
-            <KpiDeltaLabel>vs prev mo</KpiDeltaLabel>
-          </KpiDelta>
-        </KpiValueBlock>
-      </KpiCardBottom>
-    </KpiSummaryCard>
+      <OffsetKpiRow>
+        <KpiDetailItem label="Spacing" value="325 ft" />
+        <KpiDetailItem label="Formation depth" value={`${fmt(9350)} ft`} />
+        <KpiDetailItem label="Current stage" value="Curve" />
+      </OffsetKpiRow>
+    </OffsetCard>
   );
 }
 
@@ -1473,7 +1458,15 @@ function KpiSummarySection() {
     <KpiInfoCard>
       <KpiSummaryGrid>
         {KPI_SUMMARY.map((kpi) => (
-          <SingleKpiCard key={kpi.label} kpi={kpi} />
+          <KpiCard
+            key={kpi.label}
+            icon={kpi.icon}
+            label={kpi.label}
+            value={kpi.value}
+            unit={kpi.unit}
+            delta={kpi.delta}
+            range={KPI_RANGES[kpi.label]}
+          />
         ))}
       </KpiSummaryGrid>
     </KpiInfoCard>
@@ -1595,27 +1588,14 @@ function SampleColumn({ seedOffset, count = 10 }: { seedOffset: number; count?: 
           {depths.map((dp, i) => {
             const meta = SAMPLE_META[i % SAMPLE_META.length];
             return (
-              <Tile key={dp}>
-                <TileImgWrap>
-                  <TileImg src={SAMPLE_IMAGES[(seedOffset + i) % 12] as unknown as string} alt="" />
-                </TileImgWrap>
-                <TileBody>
-                  <TileTitleGroup>
-                    <TileDepthRow>
-                      <TileDepthValue>{fmt(dp)} ft</TileDepthValue>
-                    </TileDepthRow>
-                    <TileIdRow>
-                      <Icon iconName={IconName.UPC} width={20} height={20} />
-                      <TileIdLabel>{meta.id.replace('#', '')}</TileIdLabel>
-                    </TileIdRow>
-                  </TileTitleGroup>
-                  <TileDateRow>
-                    <TileSmall>{meta.date}</TileSmall>
-                    <TileSmall>/</TileSmall>
-                    <TileSmall>#{meta.count}</TileSmall>
-                  </TileDateRow>
-                </TileBody>
-              </Tile>
+              <SampleCard
+                key={dp}
+                image={SAMPLE_IMAGES[(seedOffset + i) % 12] as unknown as string}
+                depth={dp}
+                id={meta.id.replace('#', '')}
+                date={meta.date}
+                count={meta.count}
+              />
             );
           })}
         </TileGrid>
@@ -1625,165 +1605,6 @@ function SampleColumn({ seedOffset, count = 10 }: { seedOffset: number; count?: 
 }
 
 /* ============================== view ============================== */
-
-const AiFabWrap = styled.div`
-  position: fixed;
-  bottom: ${spacing.md};
-  right: ${spacing.md};
-  z-index: 200;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  border-radius: ${radii.lg};
-  transition: filter 0.2s ease;
-  &:hover {
-    filter: drop-shadow(0 8px 32px rgba(0, 0, 0, 0.48));
-  }
-`;
-
-const AiPanel = styled.div<{ $open: boolean }>`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: ${space['6px']};
-  width: ${space['320px']};
-  max-height: ${p => p.$open ? space['384px'] : '0'};
-  overflow: hidden;
-  opacity: ${p => p.$open ? 1 : 0};
-  pointer-events: ${p => p.$open ? 'all' : 'none'};
-  transition: max-height 0.25s ease, opacity 0.2s ease;
-`;
-
-const AiChip = styled.button`
-  display: flex;
-  align-items: center;
-  height: ${sizes.sm};
-  padding: 0 ${spacing.xs};
-  background: ${t.surface};
-  border: 1px solid ${t.border};
-  border-radius: ${radii.md};
-  font-family: ${fontFamilies.body};
-  font-size: ${fontSizes.s};
-  font-weight: ${fontWeights.regular};
-  color: ${t.ink2};
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: ${shadows.xl};
-  transition: border-color 0.15s ease, color 0.15s ease;
-  &:hover { border-color: ${t.teal}; color: ${t.ink}; }
-`;
-
-const beamSpin = keyframes`
-  from { transform: rotate(0deg); }
-  to   { transform: rotate(360deg); }
-`;
-
-const AiInputBorder = styled.div`
-  position: relative;
-  align-self: stretch;
-  border-radius: ${radii.md};
-  box-shadow: ${shadows.xl};
-  margin-top: ${spacing.xs};
-`;
-
-const AiAnimRing = styled.div`
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  pointer-events: none;
-  border-radius: ${radii.md};
-  padding: 1px;
-  overflow: hidden;
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  &::before {
-    content: '';
-    position: absolute;
-    inset: -150%;
-    background: conic-gradient(
-      from 0deg,
-      transparent 0deg,
-      ${t.teal} 50deg,
-      transparent 90deg,
-      transparent 360deg
-    );
-    animation: ${beamSpin} 6s linear infinite;
-  }
-  &::after {
-    content: '';
-    position: absolute;
-    inset: -150%;
-    background: conic-gradient(
-      from 0deg,
-      transparent 0deg,
-      ${d.transparent.white['72%']} 50deg,
-      transparent 90deg,
-      transparent 360deg
-    );
-    animation: ${beamSpin} 6s linear infinite;
-    animation-delay: -3s;
-  }
-`;
-
-const AiInputRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${space['4px']};
-  padding: ${space['4px']};
-  background: ${t.surface};
-  border: 1px solid ${t.borderWeaker};
-  border-radius: ${radii.md};
-`;
-
-const AiIconBtn = styled.button`
-  flex: none;
-  width: ${sizes.md};
-  height: ${sizes.md};
-  padding: 0;
-  border: none;
-  background: transparent;
-  border-radius: ${radii.sm};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  svg path { fill: ${t.ink3}; }
-  &:hover { background: ${t.panelTint}; svg path { fill: ${t.ink2}; } }
-`;
-
-const AiInputEl = styled.input`
-  flex: 1;
-  min-width: 0;
-  background: transparent;
-  border: none;
-  outline: none;
-  font-family: ${fontFamilies.body};
-  font-size: ${fontSizes.s};
-  color: ${t.ink};
-  &::placeholder { color: ${t.ink4}; }
-`;
-
-const AiSendBtn = styled.button`
-  flex: none;
-  width: ${sizes.md};
-  height: ${sizes.md};
-  padding: 0;
-  border: none;
-  border-radius: ${radii.sm};
-  background: linear-gradient(135deg, ${t.teal} 0%, ${t.tealHi} 100%);
-  opacity: 0.4;
-  cursor: not-allowed;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  svg path { fill: ${t.textOnBrand}; }
-`;
 
 
 /* ========================= floating add panel ========================== */
@@ -1935,24 +1756,7 @@ function DraggableSection({ index, isSrc, isTarget, isPending, srcHeight, onDrag
   );
 }
 
-function AiGradientIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="ai-fab-icon-grad" x1="0" y1="0" x2="16" y2="16" gradientUnits="userSpaceOnUse">
-          <stop offset="0%" stopColor={d.neutral.text.static} />
-          <stop offset="100%" stopColor={t.teal} />
-        </linearGradient>
-      </defs>
-      <path
-        fill="url(#ai-fab-icon-grad)"
-        d="M7.657 6.247c.11-.33.576-.33.686 0l.645 1.937a2.89 2.89 0 0 0 1.829 1.828l1.936.645c.33.11.33.576 0 .686l-1.937.645a2.89 2.89 0 0 0-1.828 1.829l-.645 1.936a.361.361 0 0 1-.686 0l-.645-1.937a2.89 2.89 0 0 0-1.828-1.828l-1.937-.645a.361.361 0 0 1 0-.686l1.937-.645a2.89 2.89 0 0 0 1.828-1.828zM3.794 1.148a.217.217 0 0 1 .412 0l.387 1.162c.173.518.579.924 1.097 1.097l1.162.387a.217.217 0 0 1 0 .412l-1.162.387A1.73 1.73 0 0 0 4.593 5.69l-.387 1.162a.217.217 0 0 1-.412 0L3.407 5.69A1.73 1.73 0 0 0 2.31 4.593l-1.162-.387a.217.217 0 0 1 0-.412l1.162-.387A1.73 1.73 0 0 0 3.407 2.31zM10.863.099a.145.145 0 0 1 .274 0l.258.774c.115.346.386.617.732.732l.774.258a.145.145 0 0 1 0 .274l-.774.258a1.16 1.16 0 0 0-.732.732l-.258.774a.145.145 0 0 1-.274 0l-.258-.774a1.16 1.16 0 0 0-.732-.732L9.1 2.137a.145.145 0 0 1 0-.274l.774-.258c.346-.115.617-.386.732-.732z"
-      />
-    </svg>
-  );
-}
-
-export default function WellDetail() {
+export default function WellProfile() {
   const [pageScrolled, setPageScrolled] = useState(false);
   useEffect(() => {
     const onScroll = () => setPageScrolled(window.scrollY > 0);
@@ -1963,12 +1767,6 @@ export default function WellDetail() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [themeMode, setThemeMode] = useState('dark');
   const [showcaseMode, setShowcaseMode] = useState(false);
-  const [aiFabOpen, setAiFabOpen] = useState(false);
-  const [aiMessage, setAiMessage] = useState('');
-  const aiInputRef = useRef<HTMLInputElement>(null);
-  useLayoutEffect(() => {
-    if (aiFabOpen) aiInputRef.current?.focus();
-  }, [aiFabOpen]);
 
   const [depthRange, setDepthRange] = useState(DEPTH_RANGE_OPTIONS[0]);
   const [timeWindow, setTimeWindow] = useState(TIME_WINDOW_OPTIONS[0]);
@@ -2062,7 +1860,7 @@ export default function WellDetail() {
   return (
     <Page>
       <Shell>
-        {/* ---- sticky top (top bar only — no selector row) ---- */}
+        {/* ---- sticky top (top bar only — single well, no selector row) ---- */}
         <StickyTop $scrolled={pageScrolled}>
           <TopBar>
             <TopBarLeft>
@@ -2101,10 +1899,10 @@ export default function WellDetail() {
                   />
                 )}
                 <Button
-                  label="Share"
+                  label="Compare"
                   variant="secondary"
                   size="md"
-                  rightIcon={<Icon iconName={IconName.SHARE} width={20} height={20} />}
+                  rightIcon={<Icon iconName={IconName.DIAGRAM_3} width={20} height={20} />}
                 />
               </TopBarActions>
             </TopBarMiddle>
@@ -2200,238 +1998,259 @@ export default function WellDetail() {
         </StickyTop>
 
         <Main>
-          {(() => {
-            const getFlowAction = (id: SectionId) => {
-              if (hiddenSections.has(id)) {
-                return (
-                  <SectionFlowBtnWrap>
-                    <Button
-                      label="Add"
-                      variant="secondary"
-                      size="sm"
-                      rightIcon={<Icon iconName={IconName.PLUS_LG} width={16} height={16} />}
-                      onClick={() => restoreSection(id)}
-                    />
-                  </SectionFlowBtnWrap>
-                );
-              }
-              if (toHideSections.has(id)) {
-                return (
-                  <SectionFlowBtnWrap>
-                    <Button
-                      label="Add"
-                      variant="secondary"
-                      size="sm"
-                      rightIcon={<Icon iconName={IconName.PLUS_LG} width={16} height={16} />}
-                      onClick={() => setToHideSections(prev => { const n = new Set(prev); n.delete(id); return n; })}
-                    />
-                  </SectionFlowBtnWrap>
-                );
-              }
-              if (pendingSections.has(id)) {
-                return (
-                  <SectionFlowBtnWrap>
-                    <Button
-                      label="Added"
-                      variant="primary"
-                      size="sm"
-                      rightIcon={<Icon iconName={IconName.CHECK_SIMPLE} width={16} height={16} />}
-                      onClick={() => {
-                        setPendingSections(prev => { const n = new Set(prev); n.delete(id); return n; });
-                        setHiddenSections(prev => new Set([...Array.from(prev), id]));
-                      }}
-                    />
-                  </SectionFlowBtnWrap>
-                );
-              }
-              return (
-                <SectionFlowBtnWrap>
-                  <Button
-                    label="Added"
-                    variant="primary"
-                    size="sm"
-                    rightIcon={<Icon iconName={IconName.CHECK_SIMPLE} width={16} height={16} />}
-                    onClick={() => setToHideSections(prev => new Set([...Array.from(prev), id]))}
-                  />
-                </SectionFlowBtnWrap>
-              );
-            };
+          <BodyGrid>
+            {/* ---- right: pinned project details + related comparisons (order: 2) ---- */}
+            <SideCol>
+              <GeneralSidebar />
+              <RelatedComparisons />
+              <RecentAnalyses />
+            </SideCol>
 
-            const SECTION_CONTENT: Record<SectionId, JSX.Element> = {
-              summary: (
-                <AccordionSection title={SECTION_META.summary.title} dimContent={toHideSections.has('summary') || hiddenSections.has('summary')} actions={addFlowActive ? getFlowAction('summary') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'summary' as SectionId]))} />}>
-                  <CardRow>
-                    {SUMMARY.map((card) => (
-                      <AICard key={card.title}>
-                        <svg width={0} height={0} style={{ position: 'absolute' }}>
-                          <defs>
-                            <linearGradient id="ai-card-icon-grad" x1="0" y1="0" x2="1" y2="1">
-                              <stop offset="0%" stopColor={d.neutral.text.static} stopOpacity={0.9} />
-                              <stop offset="100%" stopColor={t.teal} />
-                            </linearGradient>
-                          </defs>
-                        </svg>
-                        <IconChipOuter>
-                          <IconChip>
-                            <InvertedIcon iconName={card.icon as IconName} width={16} height={16} />
-                          </IconChip>
-                        </IconChipOuter>
-                        <AICardContent>
-                          <AICardTitle>{card.title}</AICardTitle>
-                          <CardBodyWrap>
-                            <Typography type="body" size="md" color="weaker">
-                              {card.body}
-                            </Typography>
-                          </CardBodyWrap>
-                        </AICardContent>
-                      </AICard>
-                    ))}
-                  </CardRow>
-                </AccordionSection>
-              ),
-              general: (
-                <AccordionSection title={SECTION_META.general.title} dimContent={toHideSections.has('general') || hiddenSections.has('general')} actions={addFlowActive ? getFlowAction('general') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'general' as SectionId]))} />}>
-                  <InfoColumn rows={GENERAL_A} />
-                </AccordionSection>
-              ),
-              offset: (
-                <AccordionSection title={SECTION_META.offset.title} dimContent={toHideSections.has('offset') || hiddenSections.has('offset')} actions={addFlowActive ? getFlowAction('offset') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'offset' as SectionId]))} />}>
-                  <OffsetColumn />
-                </AccordionSection>
-              ),
-              trends: (
-                <AccordionSection
-                  title="Trends"
-                  hint="- High confidence correlations"
-                  dimContent={toHideSections.has('trends') || hiddenSections.has('trends')}
-                  actions={addFlowActive ? getFlowAction('trends') : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: space['12px'] }}>
-                      <SortDropdown
-                        options={DEPTH_RANGE_OPTIONS}
-                        selectedOption={trendDepth}
-                        onSelect={setTrendDepth}
-                        title="Depth range"
-                        size="md"
-                      />
-                      <SortDropdown
-                        options={TIME_WINDOW_OPTIONS}
-                        selectedOption={timeWindow}
-                        onSelect={setTimeWindow}
-                        title="Time window"
-                        size="md"
-                      />
-                      <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'trends' as SectionId]))} />
-                    </div>
-                  )}
-                >
-                  <HccPanelRows rows={HCC_ROWS} />
-                </AccordionSection>
-              ),
-              kpi: (
-                <AccordionSection title={SECTION_META.kpi.title} dimContent={toHideSections.has('kpi') || hiddenSections.has('kpi')} actions={addFlowActive ? getFlowAction('kpi') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'kpi' as SectionId]))} />}>
-                  <KpiSummarySection />
-                </AccordionSection>
-              ),
-              correlation: (
-                <CorrelationChart
-                  flowAction={addFlowActive ? getFlowAction('correlation') : undefined}
-                  dimContent={toHideSections.has('correlation') || hiddenSections.has('correlation')}
-                  onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'correlation' as SectionId]))}
-                />
-              ),
-              samples: (
-                <AccordionSection
-                  title={SECTION_META.samples.title}
-                  dimContent={toHideSections.has('samples') || hiddenSections.has('samples')}
-                  actions={addFlowActive ? getFlowAction('samples') : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs }}>
-                        <Toggle
-                          size="md"
-                          label="Analyzed only"
-                          labelPosition="left"
-                          checked={analyzedOnly}
-                          onChange={e => setAnalyzedOnly(e.target.checked)}
+            {/* ---- left: main sections (order: 1) ---- */}
+            <RightCol>
+              {(() => {
+                const getFlowAction = (id: SectionId) => {
+                  if (hiddenSections.has(id)) {
+                    return (
+                      <SectionFlowBtnWrap>
+                        <Button
+                          label="Add"
+                          variant="secondary"
+                          size="sm"
+                          rightIcon={<Icon iconName={IconName.PLUS_LG} width={16} height={16} />}
+                          onClick={() => restoreSection(id)}
                         />
-                      </div>
-                      <SortDropdown
-                        options={SAMPLE_SORT_OPTIONS}
-                        selectedOption={sampleSort}
-                        onSelect={setSampleSort}
-                        title="Sort by"
-                        size="md"
-                      />
-                      <Tabs
-                        tabs={[
-                          { id: 'gas', label: 'Gas', leftIcon: <Icon iconName={IconName.WIND} width={16} height={16} /> },
-                          { id: 'liquid', label: 'Liquid', leftIcon: <Icon iconName={IconName.DROPLET} width={16} height={16} /> },
-                        ]}
-                        activeTab={sampleType}
-                        onTabChange={setSampleType}
-                        variant="pills"
+                      </SectionFlowBtnWrap>
+                    );
+                  }
+                  if (toHideSections.has(id)) {
+                    return (
+                      <SectionFlowBtnWrap>
+                        <Button
+                          label="Add"
+                          variant="secondary"
+                          size="sm"
+                          rightIcon={<Icon iconName={IconName.PLUS_LG} width={16} height={16} />}
+                          onClick={() => setToHideSections(prev => { const n = new Set(prev); n.delete(id); return n; })}
+                        />
+                      </SectionFlowBtnWrap>
+                    );
+                  }
+                  if (pendingSections.has(id)) {
+                    return (
+                      <SectionFlowBtnWrap>
+                        <Button
+                          label="Added"
+                          variant="primary"
+                          size="sm"
+                          rightIcon={<Icon iconName={IconName.CHECK_SIMPLE} width={16} height={16} />}
+                          onClick={() => {
+                            setPendingSections(prev => { const n = new Set(prev); n.delete(id); return n; });
+                            setHiddenSections(prev => new Set([...Array.from(prev), id]));
+                          }}
+                        />
+                      </SectionFlowBtnWrap>
+                    );
+                  }
+                  return (
+                    <SectionFlowBtnWrap>
+                      <Button
+                        label="Added"
+                        variant="primary"
                         size="sm"
+                        rightIcon={<Icon iconName={IconName.CHECK_SIMPLE} width={16} height={16} />}
+                        onClick={() => setToHideSections(prev => new Set([...Array.from(prev), id]))}
                       />
-                      <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'samples' as SectionId]))} />
-                    </div>
-                  )}
-                >
-                  <InfoCard style={{ padding: 0, overflow: 'hidden' }}>
-                    <SampleColumn seedOffset={0} count={25} />
-                  </InfoCard>
-                </AccordionSection>
-              ),
-              ar: (
-                <AccordionSection
-                  title={SECTION_META.ar.title}
-                  dimContent={toHideSections.has('ar') || hiddenSections.has('ar')}
-                  actions={addFlowActive ? getFlowAction('ar') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'ar' as SectionId]))} />}
-                >
-                  <Panel>
-                    <ChartWrap>
-                      <ChartTitleRow>
-                        <ChartTitle>A/R Ratio by depth</ChartTitle>
-                      </ChartTitleRow>
-                      <LineChartDS
-                        data={AR_CHART_DATA}
-                        xKey="depth"
-                        yKeys={['well']}
-                        colors={[t.teal]}
-                        height={300}
-                        yLabel="A/R Ratio"
-                        xLabel="Depth (ft)"
-                        xTickFormatter={(v) => `${fmt(v)} ft`}
-                      />
-                    </ChartWrap>
-                  </Panel>
-                </AccordionSection>
-              ),
-            };
+                    </SectionFlowBtnWrap>
+                  );
+                };
 
-            const orderedIds = addFlowActive
-              ? [
-                  ...sectionOrder.filter(id => !hiddenSections.has(id)),
-                  ...sectionOrder.filter(id => hiddenSections.has(id)),
-                ]
-              : sectionOrder.filter(id => !hiddenSections.has(id));
-
-            return orderedIds.map((id, index) => (
-                <div key={id} id={`section-${id}`}>
-                  <DraggableSection
-                    index={index}
-                    isSrc={dragSrcIdx === index}
-                    isTarget={dragTargetIdx === index}
-                    srcHeight={dragSrcHeight}
-                    isPending={addFlowActive || pendingSections.has(id) || hiddenSections.has(id)}
-                    onDragStart={handleSectionDragStart}
-                    onDragOver={handleSectionDragOver}
-                    onDragEnd={handleSectionDragEnd}
-                    onDrop={handleSectionDrop}
+                const SECTION_CONTENT: Record<SectionId, JSX.Element> = {
+                  summary: (
+                    <AccordionSection
+                    title={SECTION_META.summary.title}
+                    dimContent={toHideSections.has('summary') || hiddenSections.has('summary')}
+                    actions={addFlowActive ? getFlowAction('summary') : (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs }}>
+                        <Button
+                          label="Explain summary"
+                          variant="secondary"
+                          size="sm"
+                          leftIcon={<AiGradientIcon />}
+                        />
+                        <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'summary' as SectionId]))} />
+                      </div>
+                    )}
                   >
-                    {SECTION_CONTENT[id]}
-                  </DraggableSection>
-                </div>
-              ));
-          })()}
+                      <CardRow>
+                        {SUMMARY.map((card) => (
+                          <AICard key={card.title}>
+                            <svg width={0} height={0} style={{ position: 'absolute' }}>
+                              <defs>
+                                <linearGradient id="ai-card-icon-grad" x1="0" y1="0" x2="1" y2="1">
+                                  <stop offset="0%" stopColor={d.neutral.text.static} stopOpacity={0.9} />
+                                  <stop offset="100%" stopColor={t.teal} />
+                                </linearGradient>
+                              </defs>
+                            </svg>
+                            <IconChipOuter>
+                              <IconChip>
+                                <InvertedIcon iconName={card.icon as IconName} width={16} height={16} />
+                              </IconChip>
+                            </IconChipOuter>
+                            <AICardContent>
+                              <AICardTitle>{card.title}</AICardTitle>
+                              <CardBodyWrap>
+                                <Typography type="body" size="md" color="weaker">
+                                  {card.body}
+                                </Typography>
+                              </CardBodyWrap>
+                            </AICardContent>
+                          </AICard>
+                        ))}
+                      </CardRow>
+                    </AccordionSection>
+                  ),
+                  offset: (
+                    <AccordionSection title={SECTION_META.offset.title} dimContent={toHideSections.has('offset') || hiddenSections.has('offset')} actions={addFlowActive ? getFlowAction('offset') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'offset' as SectionId]))} />}>
+                      <OffsetColumn />
+                    </AccordionSection>
+                  ),
+                  trends: (
+                    <AccordionSection
+                      title="Trends"
+                      hint="- High confidence correlations"
+                      dimContent={toHideSections.has('trends') || hiddenSections.has('trends')}
+                      actions={addFlowActive ? getFlowAction('trends') : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: space['12px'] }}>
+                          <SortDropdown
+                            options={DEPTH_RANGE_OPTIONS}
+                            selectedOption={trendDepth}
+                            onSelect={setTrendDepth}
+                            title="Depth range"
+                            size="md"
+                          />
+                          <SortDropdown
+                            options={TIME_WINDOW_OPTIONS}
+                            selectedOption={timeWindow}
+                            onSelect={setTimeWindow}
+                            title="Time window"
+                            size="md"
+                          />
+                          <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'trends' as SectionId]))} />
+                        </div>
+                      )}
+                    >
+                      <HccPanelRows rows={HCC_ROWS} />
+                    </AccordionSection>
+                  ),
+                  kpi: (
+                    <AccordionSection title={SECTION_META.kpi.title} dimContent={toHideSections.has('kpi') || hiddenSections.has('kpi')} actions={addFlowActive ? getFlowAction('kpi') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'kpi' as SectionId]))} />}>
+                      <KpiSummarySection />
+                    </AccordionSection>
+                  ),
+                  correlation: (
+                    <CorrelationChart
+                      flowAction={addFlowActive ? getFlowAction('correlation') : undefined}
+                      dimContent={toHideSections.has('correlation') || hiddenSections.has('correlation')}
+                      onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'correlation' as SectionId]))}
+                    />
+                  ),
+                  samples: (
+                    <AccordionSection
+                      title={SECTION_META.samples.title}
+                      dimContent={toHideSections.has('samples') || hiddenSections.has('samples')}
+                      actions={addFlowActive ? getFlowAction('samples') : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs }}>
+                            <Toggle
+                              size="md"
+                              label="Analyzed only"
+                              labelPosition="left"
+                              checked={analyzedOnly}
+                              onChange={e => setAnalyzedOnly(e.target.checked)}
+                            />
+                          </div>
+                          <SortDropdown
+                            options={SAMPLE_SORT_OPTIONS}
+                            selectedOption={sampleSort}
+                            onSelect={setSampleSort}
+                            title="Sort by"
+                            size="md"
+                          />
+                          <Tabs
+                            tabs={[
+                              { id: 'gas', label: 'Gas', leftIcon: <Icon iconName={IconName.WIND} width={16} height={16} /> },
+                              { id: 'liquid', label: 'Liquid', leftIcon: <Icon iconName={IconName.DROPLET} width={16} height={16} /> },
+                            ]}
+                            activeTab={sampleType}
+                            onTabChange={setSampleType}
+                            variant="pills"
+                            size="sm"
+                          />
+                          <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'samples' as SectionId]))} />
+                        </div>
+                      )}
+                    >
+                      <InfoCard style={{ padding: 0, overflow: 'hidden' }}>
+                        <SampleColumn seedOffset={0} count={25} />
+                      </InfoCard>
+                    </AccordionSection>
+                  ),
+                  ar: (
+                    <AccordionSection
+                      title={SECTION_META.ar.title}
+                      dimContent={toHideSections.has('ar') || hiddenSections.has('ar')}
+                      actions={addFlowActive ? getFlowAction('ar') : <SectionMenu onRemove={() => setHiddenSections(prev => new Set([...Array.from(prev), 'ar' as SectionId]))} />}
+                    >
+                      <Panel>
+                        <ChartWrap>
+                          <ChartTitleRow>
+                            <ChartTitle>A/R Ratio by depth</ChartTitle>
+                          </ChartTitleRow>
+                          <LineChartDS
+                            data={AR_CHART_DATA}
+                            xKey="depth"
+                            yKeys={['well']}
+                            colors={[t.teal]}
+                            height={300}
+                            yLabel="A/R Ratio"
+                            xLabel="Depth (ft)"
+                            xTickFormatter={(v) => `${fmt(v)} ft`}
+                          />
+                        </ChartWrap>
+                      </Panel>
+                    </AccordionSection>
+                  ),
+                };
+
+                const orderedIds = addFlowActive
+                  ? [
+                      ...sectionOrder.filter(id => !hiddenSections.has(id)),
+                      ...sectionOrder.filter(id => hiddenSections.has(id)),
+                    ]
+                  : sectionOrder.filter(id => !hiddenSections.has(id));
+
+                return orderedIds.map((id, index) => (
+                    <div key={id} id={`section-${id}`}>
+                      <DraggableSection
+                        index={index}
+                        isSrc={dragSrcIdx === index}
+                        isTarget={dragTargetIdx === index}
+                        srcHeight={dragSrcHeight}
+                        isPending={addFlowActive || pendingSections.has(id) || hiddenSections.has(id)}
+                        onDragStart={handleSectionDragStart}
+                        onDragOver={handleSectionDragOver}
+                        onDragEnd={handleSectionDragEnd}
+                        onDrop={handleSectionDrop}
+                      >
+                        {SECTION_CONTENT[id]}
+                      </DraggableSection>
+                    </div>
+                  ));
+              })()}
+            </RightCol>
+          </BodyGrid>
         </Main>
 
         <Footer>
@@ -2444,41 +2263,9 @@ export default function WellDetail() {
         </Footer>
       </Shell>
 
-      <AiFabWrap
-        onMouseEnter={() => setAiFabOpen(true)}
-        onMouseLeave={() => setAiFabOpen(false)}
-      >
-        <AiPanel $open={aiFabOpen}>
-          {['Summarize well performance', 'Identify drilling anomalies', 'Compare to offset wells'].map((s) => (
-            <AiChip key={s}>{s}</AiChip>
-          ))}
-          <AiInputBorder>
-            <AiAnimRing />
-            <AiInputRow>
-              <AiIconBtn aria-label="Add">
-                <Icon iconName={IconName.PLUS_LG} width={16} height={16} />
-              </AiIconBtn>
-              <AiInputEl
-                ref={aiInputRef}
-                placeholder="Ask anything"
-                value={aiMessage}
-                onChange={e => setAiMessage(e.target.value)}
-              />
-              <AiIconBtn aria-label="Voice">
-                <Icon iconName={IconName.MIC} width={16} height={16} />
-              </AiIconBtn>
-              <AiSendBtn disabled aria-label="Send">
-                <Icon iconName={IconName.SEND_FILL} width={16} height={16} />
-              </AiSendBtn>
-            </AiInputRow>
-          </AiInputBorder>
-        </AiPanel>
-        <AiFab $open={aiFabOpen} aria-label="AI assistant">
-          <AiFabMiddle $open={aiFabOpen}>
-            <AiGradientIcon />
-          </AiFabMiddle>
-        </AiFab>
-      </AiFabWrap>
+      <AiChat
+        prompts={['Summarize well performance', 'Identify drilling anomalies', 'Compare to offset wells']}
+      />
 
       <FloatingAddBar $visible={addFlowActive}>
         <Button

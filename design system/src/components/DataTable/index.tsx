@@ -332,7 +332,7 @@ function DataTableInner<TData, TValue>(
                       $size={size}
                       $showGridlines={showGridlines}
                       className={header.column.getIsPinned() ? 'pinned' : ''}
-                      ref={el => (thRefs.current[header.id] = el)}
+                      ref={el => { thRefs.current[header.id] = el; }}
                       style={{
                         // width: columnMinWidths[index] || 'auto',
                         minWidth: columnMinWidths[index] || 'auto',
@@ -432,7 +432,7 @@ function DataTableInner<TData, TValue>(
                   <Th
                     $size={size}
                     $showGridlines={showGridlines}
-                    style={{ width: '50px' }}
+                    style={{ width: '1px', whiteSpace: 'nowrap', paddingLeft: '8px', paddingRight: '8px' }}
                   />
                 )}
               </tr>
@@ -547,10 +547,10 @@ function DataTableInner<TData, TValue>(
                       <Td
                         $size={size}
                         $showGridlines={showGridlines}
-                        style={{ width: '50px' }}
+                        style={{ width: '1px', whiteSpace: 'nowrap', paddingLeft: '8px', paddingRight: '8px' }}
                       >
                         <ActionButton
-                          ref={el => (actionButtonRefs.current[index] = el)}
+                          ref={el => { actionButtonRefs.current[index] = el; }}
                           onClick={event => {
                             event.stopPropagation();
                             setActiveMenu(activeMenu === index ? null : index);
